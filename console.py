@@ -4,7 +4,7 @@ from flask import request
 
 #from flask.ext.sqlalchemy import SQLAlchemy
 
-from sqlalchemy import create_engine, Table, MetaData, select, join
+from sqlalchemy import create_engine, Table, MetaData, select, join, func
 from sqlalchemy.orm import scoped_session, sessionmaker
 import sqlalchemy.exc
 
@@ -31,7 +31,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Schumacher4@localhost/temp
 app.config.from_object(__name__)
 app.debug = True
 
-engine = create_engine(u'mysql://root:Schumacher4@localhost/templogger')
+# engine = create_engine(u'mysql://root:Schumacher4@localhost/templogger')
+engine = create_engine(u'mysql://rfo:password@localhost/sake')
 Session = sessionmaker(bind=engine)
 session = Session()
 #session = SQLAlchemy(app)
@@ -86,7 +87,16 @@ def graph():
 
 @app.route('/jsond/<int:sensor>')
 def jsond(sensor=0):
-    qry = session.query(sakidb.data).filter(sakidb.data.probe_number == sensor)
+    # qry = session.query(sakidb.data).filter(sakidb.data.probe_number == sensor)
+    qry = session.query(sakidb.data.timestamp,
+                        func.avg(sakidb.data.temperature).label('temperature')). \
+                                 group_by( \
+                                    func.year(sakidb.data.timestamp), \
+                                    func.month(sakidb.data.timestamp), \
+                                    func.day(sakidb.data.timestamp), \
+                                    func.hour(sakidb.data.timestamp)). \
+                            filter(sakidb.data.probe_number == sensor)
+
     return json.dumps([(time.mktime(ii.timestamp.timetuple()) * 1000, ii.temperature) for ii in qry])
 
 app.secret_key = "\xcc\x1f\xc6O\x04\x18\x0eFN\xf9\x0c,\xfb4{''<\x9b\xfc\x08\x87\xe9\x13"
