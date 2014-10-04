@@ -1,0 +1,44 @@
+{% extends "wkbase.html" %}
+{% import "bootstrap_wtf.html" as wtf %}
+{% set active_page = '/alertconfig' %}
+{% block body_with_flasher %}
+    <div class="container">
+        <div class="page-header">
+            <h3>Alerts Config</h3>
+        </div>
+         <blockquote>
+            Manage alerts.
+         </blockquote>
+         {{ wtf.quick_form(form, action=url_for('alertconfig'),  buttons =  [('submit', 'primary', 'Create or Update')]) }}
+        <table class="table">
+            <thead>
+              <tr>
+                  <th>Target</th>
+                  <th>Attribute</th>
+                  <th>Operator</th>
+                  <th>Value</th>
+                  <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+             {% for row in vals %}
+                <tr>
+                  <td>{{ row.target }}</td>
+                  <td>{{ row.attribute }}</td>
+                  <td>{{ row.op }}</td>
+                  <td>{{ row.value }}</td>
+                  <td>
+                    <div class="dropdown">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">Actions<b class="caret"></b> </a>
+                        <ul class="dropdown-menu">  
+                           <li><a href="{{url_for('alertconfig', target=row.target, attribute=row.attribute, op=row.op, value=row.value)}}">Edit</a></li>  
+                           {#                           <li><a href="{{url_for('deletealert', item=row.target)}}">Delete</a></li>  #}
+                        </ul>
+                    </div>
+                   <td>
+                <tr>
+             {% endfor %}
+            <tbody>
+        </table>
+   </div>
+{% endblock %}

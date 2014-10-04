@@ -1,0 +1,43 @@
+{% extends "bootstrap_responsive.html" %}
+{% block body_content %}
+{% set navigation_bar = [('/report', 'Report'), ('/graph', 'Graph'), ('/alertconfig', 'Config')] -%}
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="brand" href="#">Sake Controller</a>
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+          </a>
+          <div class="nav-collapse">
+            <ul class="nav">
+              {% for href, caption in navigation_bar %}
+                  <li{% if href == active_page %} class="active"{% endif %}><a href="{{ href }}">{{ caption }}</a></li>
+              {% endfor %}
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+  <div class="container-fluid">
+      {% block flash %}
+        <div class="row-fluid">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="alert alert-{{category}} fade in">
+                  <a class="close" data-dismiss="alert" href="#">×</a>
+                  {{ message }}
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+        </div> <!-- row -->
+      {% endblock %}
+      {% block content %}
+      {% endblock content %}
+    </div> <!-- /container -->
+    {% block body_with_flasher %}
+    {% endblock %}
+
+{% endblock %}

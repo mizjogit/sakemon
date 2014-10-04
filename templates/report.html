@@ -1,0 +1,33 @@
+{% extends "wkbase.html" %}
+{% import "bootstrap_wtf.html" as wtf %}
+{% set active_page = '/report' %}
+{% block body_with_flasher %}
+    <div class="container">
+        <div class="page-header">
+            <h3>Temperatures</h3>
+        </div>
+         <blockquote>
+            Temperatures as a table
+         </blockquote>
+    </div>
+    <div class="container">
+        <table class="table">
+        <thead>
+          <tr>
+              <th>Probe Number</th>
+              <th>Temperature</th>
+              <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+         {% for row in vals %}
+            <tr>
+              <td>{{ row.probe_number }}</td>
+              <td>{{ row.temperature }}</td>
+              <td>{{ row.timestamp.ctime() }}</td>
+            <tr>
+         {% endfor %}
+        <tbody>
+    </table>
+    </div>
+{% endblock %}
