@@ -9,7 +9,7 @@
          <blockquote>
             Manage alerts.
          </blockquote>
-         {{ wtf.quick_form(form, action=url_for('alertconfig'),  buttons =  [('submit', 'primary', 'Create or Update')]) }}
+         {{ wtf.quick_form(form, action=url_for('alertconfig'),  button_map =  {'submit_button': 'primary'}) }}
         <table class="table">
             <thead>
               <tr>
