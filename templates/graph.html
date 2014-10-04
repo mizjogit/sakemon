@@ -1,7 +1,7 @@
 {% extends "wkbase.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 {% set active_page = '/graph' %}
-{%- block bootstrap_js_bottom %}
+{%- block scripts %}
      {{ super() }}
     <script src="http://code.highcharts.com/stock/highstock.js" type="text/javascript"></script>
     <script type="text/javascript">
@@ -46,6 +46,7 @@
 
     </script>
 {%- endblock %}
+
 {% block body_with_flasher %}
     <div class="container">
         <div class="page-header">

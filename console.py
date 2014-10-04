@@ -12,7 +12,7 @@ from flask.ext.bootstrap import Bootstrap
 #from flask_wtf import Form, BooleanField, TextField, validators, IntegerField, SelectField, RadioField
 
 from flask.ext.wtf import Form
-from wtforms import BooleanField, TextField, validators, IntegerField, SelectField, RadioField
+from wtforms import BooleanField, TextField, validators, IntegerField, SelectField, RadioField, SubmitField
 from wtforms.validators import Required
 
 import sys
@@ -55,6 +55,7 @@ class AlertForm(Form):
     attribute = TextField('Attribute',  [validators.Required()])
     op = TextField('Operator',  [validators.Required()])
     value = TextField('Value',  [validators.Required()])
+    submit_button = SubmitField('Add')
 
 
 @app.route('/alertconfig/', methods=['POST', 'GET'])
