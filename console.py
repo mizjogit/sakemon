@@ -89,7 +89,9 @@ def graph():
 def jsond(sensor=0):
     # qry = session.query(sakidb.data).filter(sakidb.data.probe_number == sensor)
     qry = session.query(sakidb.data.timestamp,
-                        func.avg(sakidb.data.temperature).label('temperature')). \
+                        func.avg(sakidb.data.temperature).label('avg'), \
+                        func.max(sakidb.data.temperature).label('max'), \
+                        func.min(sakidb.data.temperature).label('min')). \
                                  group_by( \
                                     func.year(sakidb.data.timestamp), \
                                     func.month(sakidb.data.timestamp), \
@@ -97,7 +99,8 @@ def jsond(sensor=0):
                                     func.hour(sakidb.data.timestamp)). \
                             filter(sakidb.data.probe_number == sensor)
 
-    return json.dumps([(time.mktime(ii.timestamp.timetuple()) * 1000, ii.temperature) for ii in qry])
+    # return json.dumps([(int(time.mktime(ii.timestamp.timetuple())) * 1000, ii.min, ii.max) for ii in qry])
+    return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
 app.secret_key = "\xcc\x1f\xc6O\x04\x18\x0eFN\xf9\x0c,\xfb4{''<\x9b\xfc\x08\x87\xe9\x13"
 
