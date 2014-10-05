@@ -4,6 +4,8 @@
 {%- block scripts %}
      {{ super() }}
     <script src="http://code.highcharts.com/stock/highstock.js" type="text/javascript"></script>
+    <script src="http://code.highcharts.com/stock/highcharts-more.js" type="text/javascript"></script>
+
     <script type="text/javascript">
 
     (function($){ // encapsulate jQuery
@@ -19,10 +21,11 @@
                 $.getJSON('/jsond/'+ name,   function(data) { 
 
                     seriesOptions[i] = {
-                        name: name,
+                        name: "Sensor " + name,
                         data: data
-                    };
-                    seriesCounter++;
+                   }; 
+
+                   seriesCounter++;
 
                     if (seriesCounter == names.length) {
                         createChart();
@@ -35,6 +38,7 @@
 
                 chart = new Highcharts.StockChart({
                     chart: {
+                        type: 'arearange',
                         renderTo: 'container'
                     },
                     series: seriesOptions
