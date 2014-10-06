@@ -13,13 +13,16 @@
         $(function() {
             var seriesOptions = [],
                 yAxisOptions = [],
+                navData = [],
                 seriesCounter = 0,
                 names = ['0', '1', '2', '3'],
                 colors = Highcharts.getOptions().colors;
 
             $.each(names, function(i, name) {
-                $.getJSON('/jsond/'+ name,   function(data) { 
-
+                $.getJSON('/jsond/nav', function(data) { 
+                    navData = data;
+                });
+                $.getJSON('/jsond/'+ name, function(data) { 
                     seriesOptions[i] = {
                         name: "Sensor " + name,
                         data: data
@@ -30,7 +33,7 @@
                     if (seriesCounter == names.length) {
                         createChart();
                     }
-                    })
+                });
             });
 
             function afterSetExtremes(e) {
@@ -59,14 +62,16 @@
                         type: 'arearange',
                         renderTo: 'container'
                     },
-            scrollbar: {
-                liveRedraw: false
-            },
+                    scrollbar: {
+                        liveRedraw: false
+                    },
                     series: seriesOptions,
-            navigator : {
-                adaptToUpdatedData: false,
-                data: seriesOptions[0].data
-          },
+                    navigator : {
+                        adaptToUpdatedData: false,
+                        series : {
+                            data: navData
+                        }
+                   },
                     rangeSelector : {
                         buttons: [{
                             type: 'hour',
