@@ -126,22 +126,21 @@ def jdata(sensor=0):
 
     return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
-@app.route('/jsond/<int:sensor>')
+@app.route('/jsond/<sensor>')
 def jsond(sensor=0):
     # qry = session.query(sakidb.data).filter(sakidb.data.probe_number == sensor)
-    qry = session.query(sakidb.data.timestamp,
-                        func.avg(sakidb.data.temperature).label('avg'), \
-                        func.max(sakidb.data.temperature).label('max'), \
-                        func.min(sakidb.data.temperature).label('min')). \
-                                 group_by( \
-                                    func.year(sakidb.data.timestamp), \
-                                    func.month(sakidb.data.timestamp), \
-                                    func.day(sakidb.data.timestamp), \
-                                    func.hour(sakidb.data.timestamp)). \
-                            filter(sakidb.data.probe_number == sensor)
-
-    # return json.dumps([(int(time.mktime(ii.timestamp.timetuple())) * 1000, ii.min, ii.max) for ii in qry])
-    return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
+    if sensor == 'nav':
+        qry = session.query(sakidb.data.timestamp, func.avg(sakidb.data.temperature).label('avg')). \
+                                     group_by(cast(sakidb.data.timestamp / 3600, Numeric(20, 0)))
+        return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
+    else:
+        qry = session.query(sakidb.data.timestamp,  \
+                           func.avg(sakidb.data.temperature).label('avg'), \
+                           func.max(sakidb.data.temperature).label('max'), \
+                           func.min(sakidb.data.temperature).label('min')). \
+                           group_by(cast(sakidb.data.timestamp / 3600, Numeric(20, 0))). \
+                           filter(sakidb.data.probe_number == sensor)
+        return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
 app.secret_key = "\xcc\x1f\xc6O\x04\x18\x0eFN\xf9\x0c,\xfb4{''<\x9b\xfc\x08\x87\xe9\x13"
 
