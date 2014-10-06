@@ -1,4 +1,6 @@
-from flask import Flask, url_for, make_response, flash, redirect
+import datetime
+
+from flask import Flask, url_for, make_response, flash, redirect, jsonify
 from flask import render_template
 from flask import request
 
@@ -7,6 +9,7 @@ from flask import request
 from sqlalchemy import create_engine, Table, MetaData, select, join, func
 from sqlalchemy.orm import scoped_session, sessionmaker
 import sqlalchemy.exc
+from sqlalchemy import cast, Numeric
 
 from flask.ext.bootstrap import Bootstrap
 #from flask_wtf import Form, BooleanField, TextField, validators, IntegerField, SelectField, RadioField
@@ -84,6 +87,44 @@ def getconfig(target=None):
 @app.route('/graph')
 def graph():
     return render_template('graph.html')
+
+
+from functools import wraps
+from flask import current_app
+
+
+def support_jsonp(f):
+    """Wraps JSONified output for JSONP"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        callback = request.args.get('callback', False)
+        if callback:
+            content = str(callback) + '(' + str(f(*args,**kwargs).data) + ')'
+            return current_app.response_class(content, mimetype='application/javascript')
+        else:
+            return f(*args, **kwargs)
+    return decorated_function
+
+
+@app.route('/jdata/<int:sensor>')
+@support_jsonp
+def jdata(sensor=0):
+    start = datetime.datetime.fromtimestamp(float(request.args.get('start')) / 1000.0)
+    end = datetime.datetime.fromtimestamp(float(request.args.get('end')) / 1000.0)
+
+    target = 50
+    seconds = (end - start).total_seconds()
+    seconds_per_sample_wanted = seconds / target
+    print "seconds_per_sample_wanted", seconds_per_sample_wanted
+
+    qry = session.query(sakidb.data.timestamp,  \
+                       func.avg(sakidb.data.temperature).label('avg'), \
+                       func.max(sakidb.data.temperature).label('max'), \
+                       func.min(sakidb.data.temperature).label('min')). \
+                       group_by(cast(sakidb.data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))). \
+                       filter(sakidb.data.probe_number == sensor, sakidb.data.timestamp > start, sakidb.data.timestamp < end)
+
+    return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
 @app.route('/jsond/<int:sensor>')
 def jsond(sensor=0):
