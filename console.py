@@ -34,8 +34,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Schumacher4@localhost/temp
 app.config.from_object(__name__)
 app.debug = True
 
-#engine = create_engine(u'mysql://root:Schumacher4@localhost/templogger')
-engine = create_engine(u'mysql://rfo:password@localhost/sake')
+engine = create_engine(u'mysql://root:Schumacher4@localhost/templogger')
+#engine = create_engine(u'mysql://rfo:password@localhost/sake')
 Session = sessionmaker(bind=engine)
 session = Session()
 #session = SQLAlchemy(app)
