@@ -43,7 +43,7 @@ session = Session()
 @app.route('/status')
 def status():
     vals = session.query(sakidb.data).order_by(sakidb.data.timestamp.desc()).limit(12)
-    return render_template('status.html')
+    return render_template('status.html', vals=vals)
 
 @app.route('/post', methods=['POST'])
 def post():
