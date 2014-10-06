@@ -117,7 +117,7 @@ def jdata(sensor=0):
     start = datetime.datetime.fromtimestamp(float(request.args.get('start')) / 1000.0)
     end = datetime.datetime.fromtimestamp(float(request.args.get('end')) / 1000.0)
 
-    target = 50
+    target = 100
     seconds = (end - start).total_seconds()
     seconds_per_sample_wanted = seconds / target
     print "seconds_per_sample_wanted", seconds_per_sample_wanted
