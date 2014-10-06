@@ -4,7 +4,6 @@
 {%- block scripts %}
      {{ super() }}
     <script src="http://code.highcharts.com/stock/highstock.js" type="text/javascript"></script>
-    <script src="http://code.highcharts.com/stock/highcharts-more.js" type="text/javascript"></script>
 
     <script type="text/javascript">
 
@@ -21,7 +20,7 @@
                 $.getJSON('/jsond/'+ name,   function(data) { 
 
                     seriesOptions[i] = {
-                        name: "Sensor " + name,
+                        name: name, 
                         data: data
                    }; 
 
@@ -38,7 +37,6 @@
 
                 chart = new Highcharts.StockChart({
                     chart: {
-                        type: 'arearange',
                         renderTo: 'container'
                     },
                     series: seriesOptions
