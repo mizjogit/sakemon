@@ -29,17 +29,74 @@
                     if (seriesCounter == names.length) {
                         createChart();
                     }
-                });
+                    })
             });
+
+            function afterSetExtremes(e) {
+                var chart = $('#container').highcharts();
+
+                chart.showLoading('Loading data from server...');
+                $.each(names, function(ii, name) {
+                    $.getJSON('/jdata/' + ii + '?start=' + Math.round(e.min) +
+                        '&end=' + Math.round(e.max) + '&callback=?', function (data) {
+
+                        chart.series[ii].setData(data.data);
+                        chart.hideLoading();
+                    })
+                .error(function(jqXHR, textStatus, errorThrown) {
+                            console.log("error " + textStatus);
+                            console.log("thrown " + errorThrown);
+                               //     console.log("incoming Text " + jqXHR.responseText);
+                                        });
+                });
+            }
 
             // create the chart when all data is loaded
             function createChart() {
-
                 chart = new Highcharts.StockChart({
                     chart: {
                         renderTo: 'container'
                     },
-                    series: seriesOptions
+            scrollbar: {
+                liveRedraw: false
+            },
+                    series: seriesOptions,
+            navigator : {
+                adaptToUpdatedData: false,
+                data: seriesOptions[0].data
+          },
+                    rangeSelector : {
+                        buttons: [{
+                            type: 'hour',
+                            count: 1,
+                            text: '1h'
+                        }, {
+                            type: 'day',
+                            count: 1,
+                            text: '1d'
+                        }, {
+                            type: 'month',
+                            count: 1,
+                            text: '1m'
+                        }, {
+                            type: 'year',
+                            count: 1,
+                            text: '1y'
+                        }, {
+                            type: 'all',
+                            text: 'All'
+                        }],
+                        inputEnabled: false, // it supports only days
+                        selected : 4 // all
+                    },
+
+
+                    xAxis : {
+                        events : {
+                            afterSetExtremes : afterSetExtremes
+                        },
+                        minRange: 60 * 1000 // minite
+                    },
                 });
             }
 
