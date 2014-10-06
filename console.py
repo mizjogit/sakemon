@@ -34,8 +34,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Schumacher4@localhost/temp
 app.config.from_object(__name__)
 app.debug = True
 
-engine = create_engine(u'mysql://root:Schumacher4@localhost/templogger')
-#engine = create_engine(u'mysql://rfo:password@localhost/sake')
+#engine = create_engine(u'mysql://root:Schumacher4@localhost/templogger')
+engine = create_engine(u'mysql://rfo:password@localhost/sake')
 Session = sessionmaker(bind=engine)
 session = Session()
 #session = SQLAlchemy(app)
@@ -120,14 +120,14 @@ def jdata(sensor=0):
     target = 100
     seconds = (end - start).total_seconds()
     seconds_per_sample_wanted = seconds / target
-    print "seconds_per_sample_wanted", seconds_per_sample_wanted
+    print "sensor", sensor, "start", start, "end", end
+    print "seconds_per_sample_wanted", seconds_per_sample_wanted, "second in range", seconds
 
     qry = session.query(sakidb.data.timestamp,  \
-                       func.avg(sakidb.data.temperature).label('avg'), \
                        func.max(sakidb.data.temperature).label('max'), \
                        func.min(sakidb.data.temperature).label('min')). \
                        group_by(cast(sakidb.data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))). \
-                       filter(sakidb.data.probe_number == sensor, sakidb.data.timestamp > start, sakidb.data.timestamp < end)
+                       filter(sakidb.data.probe_number == sensor, sakidb.data.timestamp >= start, sakidb.data.timestamp <= end)
 
     return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
@@ -135,9 +135,9 @@ def jdata(sensor=0):
 def jsond(sensor=0):
     # qry = session.query(sakidb.data).filter(sakidb.data.probe_number == sensor)
     if sensor == 'nav':
-        qry = session.query(sakidb.data.timestamp, func.avg(sakidb.data.temperature).label('avg')). \
+        qry = session.query(sakidb.data.timestamp, func.max(sakidb.data.temperature).label('max')). \
                                      group_by(cast(sakidb.data.timestamp / 3600, Numeric(20, 0)))
-        return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
+        return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.max) for ii in qry])
     else:
         qry = session.query(sakidb.data.timestamp,  \
                            func.avg(sakidb.data.temperature).label('avg'), \
