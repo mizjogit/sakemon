@@ -110,6 +110,7 @@ def support_jsonp(f):
             return f(*args, **kwargs)
     return decorated_function
 
+target = 100
 
 @app.route('/jdata/<int:sensor>')
 @support_jsonp
@@ -117,12 +118,8 @@ def jdata(sensor=0):
     start = datetime.datetime.fromtimestamp(float(request.args.get('start')) / 1000.0)
     end = datetime.datetime.fromtimestamp(float(request.args.get('end')) / 1000.0)
 
-    target = 100
     seconds = (end - start).total_seconds()
     seconds_per_sample_wanted = seconds / target
-    print "sensor", sensor, "start", start, "end", end
-    print "seconds_per_sample_wanted", seconds_per_sample_wanted, "second in range", seconds
-
     qry = session.query(sakidb.data.timestamp,  \
                        func.max(sakidb.data.temperature).label('max'), \
                        func.min(sakidb.data.temperature).label('min')). \
@@ -139,11 +136,14 @@ def jsond(sensor=0):
                                      group_by(cast(sakidb.data.timestamp / 3600, Numeric(20, 0)))
         return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.max) for ii in qry])
     else:
+        start, end = session.query(func.max(sakidb.data.timestamp), func.min(sakidb.data.timestamp)).first()
+        seconds = (end - start).total_seconds()
+        seconds_per_sample_wanted = seconds / target
         qry = session.query(sakidb.data.timestamp,  \
                            func.avg(sakidb.data.temperature).label('avg'), \
                            func.max(sakidb.data.temperature).label('max'), \
                            func.min(sakidb.data.temperature).label('min')). \
-                           group_by(cast(sakidb.data.timestamp / 3600, Numeric(20, 0))). \
+                           group_by(cast(sakidb.data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))). \
                            filter(sakidb.data.probe_number == sensor)
         return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
