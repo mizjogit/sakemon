@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 import time
-import sqlite3
+#import sqlite3
 
 #globals
-dbname='/var/www/templog.db'
+#dbname='/var/www/templog.db'
 probe=['28-00000405860e','28-00000405bb1e','28-00000405c040']
 speriod=15
 
@@ -30,18 +30,18 @@ def get_temp(devicefile):
 
 def log_temp(temp):
     
-   file = open('temp.txt','a')
+#   file = open('temp.txt','a')
    print("temperature="+str(temp))
-   file.write(str(temp)+',')
+#   file.write(str(temp)+',')
 
-   conn=sqlite3.connect(dbname)
-   curs=conn.cursor()
+#   conn=sqlite3.connect(dbname)
+#   curs=conn.cursor()
 
-   curs.execute("INSERT INTO temps values(datetime('now'), (?))", (temp,))
+#   curs.execute("INSERT INTO temps values(datetime('now'), (?))", (temp,))
 
    # commit the changes
-   conn.commit()
-   conn.close()
+#   conn.commit()
+#   conn.close()
 
 
 def main():
