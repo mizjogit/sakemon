@@ -44,21 +44,21 @@ session = Session()
 
 @app.route('/status')
 def status():
-    vals = session.query(sakidb.data).order_by(sakidb.data.timestamp.desc()).limit(12)
+    vals = session.query(sakidb.temperature).order_by(sakidb.temperature.timestamp.desc()).limit(12)
     return render_template('status.html', vals=vals)
 
 
 @app.route('/post', methods=['POST'])
 def post():
     for probe,temp in request.form.items():
-	session.add(sakidb.data(probe, temp))
+	session.add(sakidb.temperature(probe, temp))
     session.commit()
     return " "
 
 @app.route('/report')
 def report():
-    #vals = session.query(sakidb.data).all()
-    vals = session.query(sakidb.data).order_by(sakidb.data.timestamp.desc()).limit(12)
+    #vals = session.query(sakidb.temperature).all()
+    vals = session.query(sakidb.temperature).order_by(sakidb.temperature.timestamp.desc()).limit(12)
     return render_template('report.html', vals=vals)
 
 class AlertForm(Form):
@@ -74,7 +74,7 @@ def alertconfig():
     if request.method == 'POST': 
         form = AlertForm()
         if form.validate():
-            nf = sakidb.config(form.target.data, form.attribute.data, form.op.data, form.value.data)
+            nf = sakidb.config(form.target.temperature, form.attribute.temperature, form.op.temperature, form.value.temperature)
             session.merge(nf)  
             session.commit()
     else:
@@ -106,7 +106,7 @@ def support_jsonp(f):
     def decorated_function(*args, **kwargs):
         callback = request.args.get('callback', False)
         if callback:
-            content = str(callback) + '(' + str(f(*args,**kwargs).data) + ')'
+            content = str(callback) + '(' + str(f(*args,**kwargs).temperature) + ')'
             return current_app.response_class(content, mimetype='application/javascript')
         else:
             return f(*args, **kwargs)
@@ -122,31 +122,31 @@ def jdata(sensor=0):
 
     seconds = (end - start).total_seconds()
     seconds_per_sample_wanted = seconds / target
-    qry = session.query(sakidb.data.timestamp,  \
-                       func.max(sakidb.data.temperature).label('max'), \
-                       func.min(sakidb.data.temperature).label('min')). \
-                       group_by(cast(sakidb.data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))). \
-                       filter(sakidb.data.probe_number == sensor, sakidb.data.timestamp >= start, sakidb.data.timestamp <= end)
+    qry = session.query(sakidb.temperature.timestamp,  \
+                       func.max(sakidb.temperature.temperature).label('max'), \
+                       func.min(sakidb.temperature.temperature).label('min')). \
+                       group_by(cast(sakidb.temperature.timestamp / seconds_per_sample_wanted, Numeric(20, 0))). \
+                       filter(sakidb.temperature.probe_number == sensor, sakidb.temperature.timestamp >= start, sakidb.temperature.timestamp <= end)
 
     return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
 @app.route('/jsond/<sensor>')
 def jsond(sensor=0):
-    # qry = session.query(sakidb.data).filter(sakidb.data.probe_number == sensor)
+    # qry = session.query(sakidb.temperature).filter(sakidb.temperature.probe_number == sensor)
     if sensor == 'nav':
-        qry = session.query(sakidb.data.timestamp, func.max(sakidb.data.temperature).label('max')). \
-                                     group_by(cast(sakidb.data.timestamp / 3600, Numeric(20, 0)))
+        qry = session.query(sakidb.temperature.timestamp, func.max(sakidb.temperature.temperature).label('max')). \
+                                     group_by(cast(sakidb.temperature.timestamp / 3600, Numeric(20, 0)))
         return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.max) for ii in qry])
     else:
-        start, end = session.query(func.max(sakidb.data.timestamp), func.min(sakidb.data.timestamp)).first()
+        start, end = session.query(func.max(sakidb.temperature.timestamp), func.min(sakidb.temperature.timestamp)).first()
         seconds = (end - start).total_seconds()
         seconds_per_sample_wanted = seconds / target
-        qry = session.query(sakidb.data.timestamp,  \
-                           func.avg(sakidb.data.temperature).label('avg'), \
-                           func.max(sakidb.data.temperature).label('max'), \
-                           func.min(sakidb.data.temperature).label('min')). \
-                           group_by(cast(sakidb.data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))). \
-                           filter(sakidb.data.probe_number == sensor)
+        qry = session.query(sakidb.temperature.timestamp,  \
+                           func.avg(sakidb.temperature.temperature).label('avg'), \
+                           func.max(sakidb.temperature.temperature).label('max'), \
+                           func.min(sakidb.temperature.temperature).label('min')). \
+                           group_by(cast(sakidb.temperature.timestamp / seconds_per_sample_wanted, Numeric(20, 0))). \
+                           filter(sakidb.temperature.probe_number == sensor)
         return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
 app.secret_key = "\xcc\x1f\xc6O\x04\x18\x0eFN\xf9\x0c,\xfb4{''<\x9b\xfc\x08\x87\xe9\x13"

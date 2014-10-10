@@ -1,12 +1,24 @@
 #!/usr/bin/env python
 
 import time
-#import sqlite3
+import os
+import re
+import subprocess
+import MySQLdb
 
-#globals
-#dbname='/var/www/templog.db'
+
+db = MySQLdb.connect("localhost","root","Schumacher4","templogger" )
+
+#base_dir = '/sys/bus/w1/devices/'
+#device_folder = glob.glob( base_dir + '28*' )[0]
+#device_file = device_folder + '/w1_slave'
+
+
 probe=['28-00000405860e','28-00000405bb1e','28-00000405c040']
 speriod=15
+
+os.system( 'modprobe w1-gpio' )
+os.system( 'modprobe w1-therm' )
 
 def get_temp(devicefile):
     try:
@@ -28,6 +40,16 @@ def get_temp(devicefile):
         print("There was an error.")
         return None
 
+
+# This function inserts received data into mysql database - Adjust parameters for your server
+def insert_data(humidity):
+    mydb = MySQLdb.connect(host='localhost', user='root', passwd='Schumacher4', db='templogger')
+    cursor = mydb.cursor()
+    cursor.execute ("INSERT INTO humidity (humidity) VALUES(%s)", humidity)
+    mydb.commit()
+    cursor.close()
+    exit()
+
 def log_temp(temp):
     
 #   file = open('temp.txt','a')
@@ -44,24 +66,42 @@ def log_temp(temp):
 #   conn.close()
 
 
+def read_dht22 (PiPin):
+ 
+  while (1):
+    output = subprocess.check_output(["./Adafruit_DHT", "2302", str(PiPin) ]);
+    print output 
+    matches = re.search("Temp =\s+([0-9.]+)", output)
+    if (matches):
+        temp = float(matches.group(1))
+        matches = re.search("Hum =\s+([0-9.]+)", output)
+        humidity = float(matches.group(1))
+        break
+    time.sleep(5)
+  print "Temperature: %.1f C" % temp
+  print "Humidity:    %.1f %%" % humidity
+  insert_data (humidity)
+
+
 def main():
 
+  read_dht22(22)
 
-  while True:
-      w1devicefile = '/sys/bus/w1/devices/' + probe[0] + '/w1_slave'
-      temperature = get_temp(w1devicefile)
-      log_temp(temperature)
+#  while True:
+#      w1devicefile = '/sys/bus/w1/devices/' + probe[0] + '/w1_slave'
+#      temperature = get_temp(w1devicefile)
+#      log_temp(temperature)
 
 
-      w1devicefile = '/sys/bus/w1/devices/' + probe[1] + '/w1_slave'
-      temperature = get_temp(w1devicefile)
-      log_temp(temperature)
+#      w1devicefile = '/sys/bus/w1/devices/' + probe[1] + '/w1_slave'
+#      temperature = get_temp(w1devicefile)
+#      log_temp(temperature)
 
-      w1devicefile = '/sys/bus/w1/devices/' + probe[2] + '/w1_slave'
-      temperature = get_temp(w1devicefile)
-      log_temp(temperature)
+#      w1devicefile = '/sys/bus/w1/devices/' + probe[2] + '/w1_slave'
+#      temperature = get_temp(w1devicefile)
+#      log_temp(temperature)
 
-      time.sleep(speriod)
+#      time.sleep(speriod)
 
 if __name__=="__main__":
     main()

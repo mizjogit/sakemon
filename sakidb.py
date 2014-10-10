@@ -9,8 +9,8 @@ import datetime
 dbase = declarative_base()
 
 
-class data(dbase):
-    __tablename__ = 'data'
+class tmperature(dbase):
+    __tablename__ = 'temperature'
     probe_number = Column(INTEGER(), primary_key=True, nullable=False)
     temperature = Column(FLOAT(), primary_key=False, nullable=False)
     timestamp = Column(TIMESTAMP(), primary_key=True, nullable=False, default=text(u'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
@@ -24,7 +24,7 @@ class data(dbase):
         return "<date(%d, %3.2f, %s)>" % (self.probe_number, self.temperature, str(self.timestamp)) 
 
 
-Index(u'probe_number', data.probe_number, unique=False)
+Index(u'probe_number', temperature.probe_number, unique=False)
 
 
 class config(dbase):
