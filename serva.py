@@ -7,7 +7,7 @@ from gevent.pywsgi import WSGIServer
 from gevent.coros import Semaphore
 
 
-class E400(Exception):
+class E405(Exception):
     def __init__(self, message):
         self.message = message
 
@@ -26,7 +26,7 @@ class SemaApp:
             riter, response, headers = self.runner(environ, start_response, response_headers)
             start_response(response, headers)
             return riter
-        except E400 as ee:
+        except E405 as ee:
             print "error", str(ee)
             start_response('405 Bad Request', response_headers)
             return iter([])
@@ -34,14 +34,14 @@ class SemaApp:
     def runner(self, environ, start_response, headers):
         base, fun = os.path.split(environ['PATH_INFO'])
 
+        if base != '/bmanagea': raise E405("invalid base '%s'" % base)
+        print "base", base, "fun", fun
         if environ['REQUEST_METHOD'] == 'POST':
             query = urlparse.parse_qs(environ['wsgi.input'].read())
             if fun == 'release':
-                if 'bid' not in query:
-                    raise E400("bid not in post")
+                if 'bid' not in query: raise E405("bid not in post")
                 ritem = query['bid'][0]
-                if ritem not in self.sem_count:
-                    raise E400("%s not in sem_map" % ritem)
+                if ritem not in self.sem_count: raise E405("%s not in sem_map" % ritem)
                 rcount = self.sem_count[ritem]
                 sem = self.sem_map[ritem]
                 del self.sem_count[ritem]
@@ -50,15 +50,13 @@ class SemaApp:
                     sem.release()
                 return iter([]), '200 OK', headers
             else:
-                raise E400("invalid function '%s'" % fun)
+                raise E405("invalid function '%s'" % fun)
         else:
             query = urlparse.parse_qs(environ['QUERY_STRING'])
             if fun == 'block':
-                if 'bid' not in query:
-                    raise E400("bid not in query")
+                if 'bid' not in query: raise E405("bid not in query")
                 ritem = query['bid'][0]
-                if 'okredir' not in query:
-                    raise E400("'okredir' not in query")
+                if 'okredir' not in query: raise E405("'okredir' not in query")
                 if ritem not in self.sem_map:
                     self.sem_map[ritem] = Semaphore()
                     self.sem_map[ritem].acquire(blocking=True)
@@ -68,7 +66,7 @@ class SemaApp:
                 headers.append(('Location', query['okredir'][0]))
                 return iter([]), '301 Moved Permanently', headers
             else:
-                raise E400("invalid function '%s'" % fun)
+                raise E405("invalid function '%s'" % fun)
 
 
 if __name__ == '__main__':
