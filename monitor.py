@@ -5,7 +5,7 @@ import os
 import re
 import subprocess
 import MySQLdb
-
+import requests
 
 db = MySQLdb.connect("localhost","root","Schumacher4","templogger" )
 
@@ -51,6 +51,8 @@ def insert_data(probe_number,humidity,temperature):
     cursor.execute ("INSERT INTO data (probe_number,humidity,temperature) VALUES (%s, %s, %s)", (probe_number, humidity, temperature))
     mydb.commit()
     cursor.close()
+    r = requests.post("http://localhost:8088/bmanagea/release", {'bid': probe_number})
+    print r.status_code
  #   exit()
 
 def read_dht22 (PiPin):
@@ -78,6 +80,8 @@ def read_ds18B20 (port):
 def main():
   while (1):
     read_dht22(22)
+  
+
     for x in range(0,3):
       read_ds18B20(x)
   time.sleep(5)
