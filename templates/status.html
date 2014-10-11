@@ -22,17 +22,15 @@
         </thead>
         <tbody>
          {% for row in vals %}
-            <tr>
-                <div {# class="active-div" #}
+                <tr class="active-div" 
                      timeout=1000
-                     href="http://josh:8088/bmanagea/block?bid=1&okredir=http://josh:8080/pstatus/{{row.probe_number}}">
-                    <td>{{ row.probe_number }}</td>
+                     href="http://josh:8088/bmanagea/block?bid={{row.probe_number}}&okredir=http://josh:8080/pstatus/{{row.probe_number}}">
+                     {#               <td>{{ row.probe_number }}</td>
                     <td>{{ row.temperature }}</td>
                     <td>{{ row.humidity }}</td>
-                    <td>{{ row.timestamp.ctime() }}</td>
+                    <td>{{ row.timestamp.ctime() }}</td> #}
 
-                 </div>
-            <tr>
+                 </tr>
          {% endfor %}
         <tbody>
     </table>
