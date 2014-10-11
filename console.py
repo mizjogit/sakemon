@@ -1,6 +1,12 @@
 import datetime
 
+<<<<<<< HEAD
 from flask import Flask, url_for, make_response, flash, redirect, jsonify, render_template, request
+=======
+from flask import Flask, url_for, make_response, flash, redirect, jsonify, abort
+from flask import render_template
+from flask import request
+>>>>>>> a871316b16c782c3f23cf6c55a4e022559e3b3bb
 
 from sqlalchemy import create_engine, Table, MetaData, select, join, func, cast, Numeric
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -35,8 +41,18 @@ session = Session()
 
 @app.route('/status')
 def status():
-    vals = session.query(sakidb.data).order_by(sakidb.data.timestamp.desc()).limit(4)
-    return render_template('status.html', vals=vals)
+#    vals = session.query(sakidb.data).order_by(sakidb.data.timestamp.desc()).limit(12)
+#    select probe_number,temperature,humidity,max(timestamp) from data group by probe_number order by probe_number
+
+    vals = session.query(sakidb.data.probe_number,
+                         sakidb.data.temperature,
+                         sakidb.data.humidity,
+                         func.max(sakidb.data.timestamp).label('timestamp')) \
+                                  .group_by(sakidb.data.probe_number) \
+                                  .order_by(sakidb.data.probe_number)
+    response = make_response(render_template('status.html', vals=vals))
+#    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
 
 
 @app.route('/post', methods=['POST'])
@@ -120,6 +136,14 @@ def jdata(sensor=0):
                        filter(sakidb.data.probe_number == sensor, sakidb.data.timestamp >= start, sakidb.data.timestamp <= end)
 
     return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
+
+@app.route('/pstatus/<sensor>')
+def pstatus(sensor=None):
+    response = make_response("<div>sensor %s</div>" % str(datetime.datetime.now()))
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
+
+
 
 @app.route('/jsond/<sensor>')
 def jsond(sensor=0):

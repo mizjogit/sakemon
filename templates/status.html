@@ -23,13 +23,30 @@
         <tbody>
          {% for row in vals %}
             <tr>
+<<<<<<< HEAD
               <td>{{ row.probe_number }}</td>
               <td>{{ row.temperature }}</td>
               <td>{{ row.humidity }}</td>
               <td>{{ row.timestamp.ctime() }}</td>
+=======
+                <div {# class="active-div" #}
+                     timeout=1000
+                     href="http://josh:8088/bmanagea/block?bid=1&okredir=http://josh:8080/pstatus/{{row.probe_number}}">
+                    <td>{{ row.probe_number }}</td>
+                    <td>{{ row.temperature }}</td>
+                    <td>{{ row.humidity }}</td>
+                    <td>{{ row.timestamp.ctime() }}</td>
+
+                 </div>
+>>>>>>> a871316b16c782c3f23cf6c55a4e022559e3b3bb
             <tr>
          {% endfor %}
         <tbody>
     </table>
     </div>
+{% endblock %}
+{% block scripts %}
+    {{ super() }}
+    <script src="http://code.highcharts.com/stock/highstock.js" type="text/javascript"></script>
+    <script src="{{url_for('static', filename='js/active-div.js')}}" type="text/javascript"></script>
 {% endblock %}
