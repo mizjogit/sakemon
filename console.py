@@ -1,6 +1,6 @@
 import datetime
 
-from flask import Flask, url_for, make_response, flash, redirect, jsonify
+from flask import Flask, url_for, make_response, flash, redirect, jsonify, abort
 from flask import render_template
 from flask import request
 
@@ -45,7 +45,9 @@ session = Session()
 @app.route('/status')
 def status():
     vals = session.query(sakidb.data).order_by(sakidb.data.timestamp.desc()).limit(12)
-    return render_template('status.html', vals=vals)
+    response = make_response(render_template('status.html', vals=vals))
+#    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
 
 
 @app.route('/post', methods=['POST'])
@@ -129,6 +131,14 @@ def jdata(sensor=0):
                        filter(sakidb.data.probe_number == sensor, sakidb.data.timestamp >= start, sakidb.data.timestamp <= end)
 
     return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
+
+@app.route('/pstatus/<sensor>')
+def pstatus(sensor=None):
+    response = make_response("<div>sensor %s</div>" % str(datetime.datetime.now()))
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
+
+
 
 @app.route('/jsond/<sensor>')
 def jsond(sensor=0):
