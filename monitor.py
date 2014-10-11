@@ -57,7 +57,7 @@ def read_dht22 (PiPin):
  
   while (1):
     output = subprocess.check_output(["/home/sakemon/sakemon/Adafruit_DHT", "2302", str(PiPin) ]);
-    print output 
+   # print output 
     matches = re.search("Temp =\s+([0-9.]+)", output)
     if (matches):
         temp = float(matches.group(1))
@@ -66,8 +66,8 @@ def read_dht22 (PiPin):
         humidity = float(matches.group(1))
         break
     time.sleep(5)
-  print "Temperature: %.1f C" % temp
-  print "Humidity:    %.1f %%" % humidity
+  #print "Temperature: %.1f C" % temp
+  #print "Humidity:    %.1f %%" % humidity
   insert_data ("4",humidity,temp)
 
 
