@@ -22,6 +22,7 @@ class SemaApp:
 
     def application(self, environ, start_response):
         response_headers = [('Content-type', 'text/plain')]
+        response_headers = [('Access-Control-Allow-Origin', '*')]
         try:
             riter, response, headers = self.runner(environ, start_response, response_headers)
             start_response(response, headers)
@@ -73,4 +74,4 @@ if __name__ == '__main__':
     print 'Serving on 8088...'
     semapp = SemaApp()
     appruna = functools.partial(SemaApp.application, semapp)
-    WSGIServer(('127.0.0.1', 8088), appruna).serve_forever()
+    WSGIServer(('0.0.0.0', 8088), appruna).serve_forever()

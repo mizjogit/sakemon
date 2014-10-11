@@ -29,11 +29,12 @@
          {% endfor %}
         <tbody>
     </table>
- <div class="active-div" href="{{url_for('wait.wait_on', oid=summary_wait_obj, target=url_for('files.adiv_summary'))|safe}}">
+    <div class="active-div" timeout=1000 href="http://josh:8088/bmanagea/block?bid=1&okredir=http://josh:8080/pstatus/1">
                           Calculating ... </div>
     </div>
 {% endblock %}
 {% block scripts %}
     {{ super() }}
     <script src="http://code.highcharts.com/stock/highstock.js" type="text/javascript"></script>
+    <script src="{{url_for('static', filename='js/active-div.js')}}" type="text/javascript"></script>
 {% endblock %}
