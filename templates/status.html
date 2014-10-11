@@ -16,6 +16,7 @@
           <tr>
               <th>Probe Number</th>
               <th>Temperature</th>
+              <th>Humidity</th>
               <th>Time</th>
           </tr>
         </thead>
@@ -24,6 +25,7 @@
             <tr>
               <td>{{ row.probe_number }}</td>
               <td>{{ row.temperature }}</td>
+              <td>{{ row.humidity }}</td>
               <td>{{ row.timestamp.ctime() }}</td>
             <tr>
          {% endfor %}

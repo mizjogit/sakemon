@@ -1,19 +1,12 @@
 import datetime
 
-from flask import Flask, url_for, make_response, flash, redirect, jsonify
-from flask import render_template
-from flask import request
+from flask import Flask, url_for, make_response, flash, redirect, jsonify, render_template, request
 
-#from flask.ext.sqlalchemy import SQLAlchemy
-
-from sqlalchemy import create_engine, Table, MetaData, select, join, func
+from sqlalchemy import create_engine, Table, MetaData, select, join, func, cast, Numeric
 from sqlalchemy.orm import scoped_session, sessionmaker
 import sqlalchemy.exc
-from sqlalchemy import cast, Numeric
 
 from flask.ext.bootstrap import Bootstrap
-#from flask_wtf import Form, BooleanField, TextField, validators, IntegerField, SelectField, RadioField
-
 from flask.ext.wtf import Form
 from wtforms import BooleanField, TextField, validators, IntegerField, SelectField, RadioField, SubmitField
 from wtforms.validators import Required
@@ -21,7 +14,6 @@ from wtforms.validators import Required
 import sys
 import json
 import time
-#import mod_wsgi
 
 import sakidb
 
@@ -36,15 +28,14 @@ app.debug = True
 
 from engineconfig import cstring
 engine = create_engine(cstring)
-#engine = create_engine(u'mysql://root:Schumacher4@localhost/templogger')
-#engine = create_engine(u'mysql://rfo:password@localhost/sake')
-Session = sessionmaker(bind=engine)
+#Session = sessionmaker(bind=engine)
+Session = sessionmaker(bind=engine, autocommit=True)
 session = Session()
-#session = SQLAlchemy(app)
+
 
 @app.route('/status')
 def status():
-    vals = session.query(sakidb.data).order_by(sakidb.data.timestamp.desc()).limit(12)
+    vals = session.query(sakidb.data).order_by(sakidb.data.timestamp.desc()).limit(4)
     return render_template('status.html', vals=vals)
 
 

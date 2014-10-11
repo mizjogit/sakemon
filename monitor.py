@@ -54,10 +54,8 @@ def insert_data(probe_number,humidity,temperature):
  #   exit()
 
 def read_dht22 (PiPin):
- 
   while (1):
     output = subprocess.check_output(["/home/sakemon/sakemon/Adafruit_DHT", "2302", str(PiPin) ]);
-   # print output 
     matches = re.search("Temp =\s+([0-9.]+)", output)
     if (matches):
         temp = float(matches.group(1))
@@ -65,26 +63,24 @@ def read_dht22 (PiPin):
         global humidity 
         humidity = float(matches.group(1))
         break
-    time.sleep(5)
+    time.sleep(1)
   #print "Temperature: %.1f C" % temp
   #print "Humidity:    %.1f %%" % humidity
   insert_data ("3",humidity,temp)
 
 
+def read_ds18B20 (port):
+  w1devicefile = '/sys/bus/w1/devices/' + probe[port] + '/w1_slave'
+  temperature = get_temp(w1devicefile)
+  insert_data (port,humidity,temperature)
+
+
 def main():
-  read_dht22(22)
-  
-  w1devicefile = '/sys/bus/w1/devices/' + probe[0] + '/w1_slave'
-  temperature = get_temp(w1devicefile)
-  insert_data ("0",humidity,temperature)
-
-  w1devicefile = '/sys/bus/w1/devices/' + probe[1] + '/w1_slave'
-  temperature = get_temp(w1devicefile)
-  insert_data ("1",humidity,temperature)
-
-  w1devicefile = '/sys/bus/w1/devices/' + probe[2] + '/w1_slave'
-  temperature = get_temp(w1devicefile)
-  insert_data ("2",humidity,temperature)
+  while (1):
+    read_dht22(22)
+    for x in range(0,3):
+      read_ds18B20(x)
+  time.sleep(5)
 
 if __name__=="__main__":
     main()
