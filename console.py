@@ -142,7 +142,12 @@ def jdata(sensor=0):
 
 @app.route('/pstatus/<sensor>')
 def pstatus(sensor=None):
-    response = make_response("<div>sensor %s</div>" % str(datetime.datetime.now()))
+    row = session.query(sakidb.data.probe_number,
+                         sakidb.data.temperature,
+                         sakidb.data.humidity,
+                         func.max(sakidb.data.timestamp).label('timestamp')) \
+                                  .filter(sakidb.data.probe_number == sensor).first()
+    response = make_response(render_template('status_frag.html', row=row))
     response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
