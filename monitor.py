@@ -68,7 +68,7 @@ def read_dht22 (PiPin):
     time.sleep(5)
   #print "Temperature: %.1f C" % temp
   #print "Humidity:    %.1f %%" % humidity
-  insert_data ("4",humidity,temp)
+  insert_data ("3",humidity,temp)
 
 
 def main():
