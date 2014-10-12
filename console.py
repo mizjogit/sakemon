@@ -44,7 +44,6 @@ session = Session()
 
 @app.route('/status')
 def status():
-# select probe_number,temperature,timestamp from data where timestamp in (select max(timestamp) from data group by probe_number) order by probe_number;
     max_times = session.query(func.max(sakidb.data.timestamp)).group_by(sakidb.data.probe_number).subquery()
     vals = session.query(sakidb.data.probe_number,
                          sakidb.data.temperature,
@@ -53,7 +52,7 @@ def status():
                                .filter(sakidb.data.timestamp.in_(max_times)) \
                                .order_by(sakidb.data.probe_number)
     response = make_response(render_template('status.html', vals=vals))
-#    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
 
