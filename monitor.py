@@ -65,7 +65,7 @@ def read_dht22 (PiPin):
         global humidity 
         humidity = float(matches.group(1))
         break
-    time.sleep(2)
+    time.sleep(3)
   #print "Temperature: %.1f C" % temp
   #print "Humidity:    %.1f %%" % humidity
   insert_data ("3",humidity,temp)
@@ -80,8 +80,6 @@ def read_ds18B20 (port):
 def main():
   while (1):
     read_dht22(22)
-  
-
     for x in range(0,3):
       read_ds18B20(x)
     time.sleep(5)
