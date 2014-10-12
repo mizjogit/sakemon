@@ -36,17 +36,15 @@ session = Session()
 
 @app.route('/status')
 def status():
-#    vals = session.query(sakidb.data).order_by(sakidb.data.timestamp.desc()).limit(12)
-#    select probe_number,temperature,humidity,max(timestamp) from data group by probe_number order by probe_number
-
+    max_times = session.query(func.max(sakidb.data.timestamp)).group_by(sakidb.data.probe_number).subquery()
     vals = session.query(sakidb.data.probe_number,
                          sakidb.data.temperature,
                          sakidb.data.humidity,
-                         func.max(sakidb.data.timestamp).label('timestamp')) \
-                                  .group_by(sakidb.data.probe_number) \
-                                  .order_by(sakidb.data.probe_number)
+                         sakidb.data.timestamp) \
+                               .filter(sakidb.data.timestamp.in_(max_times)) \
+                               .order_by(sakidb.data.probe_number)
     response = make_response(render_template('status.html', vals=vals))
-#    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
 
@@ -134,11 +132,10 @@ def jdata(sensor=0):
 
 @app.route('/pstatus/<sensor>')
 def pstatus(sensor=None):
-    row = session.query(sakidb.data.probe_number,
-                         sakidb.data.temperature,
-                         sakidb.data.humidity,
-                         func.max(sakidb.data.timestamp).label('timestamp')) \
-                                  .filter(sakidb.data.probe_number == sensor).first()
+#    select * from data where timestamp = (select max(timestamp) from data where probe_number = 1) and probe_number = 1;
+    max_time = session.query(func.max(sakidb.data.timestamp)).filter(sakidb.data.probe_number == sensor).subquery()
+    row = session.query(sakidb.data.probe_number, sakidb.data.temperature, sakidb.data.humidity, sakidb.data.timestamp) \
+                               .filter(sakidb.data.timestamp == max_time, sakidb.data.probe_number == sensor).first()
     response = make_response(render_template('status_frag.html', row=row))
     response.headers['Access-Control-Allow-Origin'] = '*'
     return response
