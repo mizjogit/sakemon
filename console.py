@@ -3,23 +3,6 @@ import json
 import time
 import datetime
 
-<<<<<<< HEAD
-
-from flask import Flask, url_for, make_response, flash, redirect, jsonify, render_template, request
-
-from sqlalchemy import create_engine, Table, MetaData, select, join, func, cast, Numeric
-from sqlalchemy.orm import scoped_session, sessionmaker
-import sqlalchemy.exc
-
-from flask.ext.bootstrap import Bootstrap
-from flask.ext.wtf import Form
-from wtforms import BooleanField, TextField, validators, IntegerField, SelectField, RadioField, SubmitField
-from wtforms.validators import Required
-
-import sys
-import json
-import time
-=======
 from flask import Flask, make_response, jsonify, render_template, request
 
 from sqlalchemy import create_engine, func, and_
@@ -30,7 +13,7 @@ from flask.ext.bootstrap import Bootstrap
 
 from flask.ext.wtf import Form
 from wtforms import TextField, validators, SubmitField
->>>>>>> 650dc96a239463226150997b9ed8cc5aa8078899
+
 
 import sakidb
 
@@ -44,27 +27,15 @@ app.config.from_object(__name__)
 app.debug = True
 
 from engineconfig import cstring
-
 engine = create_engine(cstring)
-<<<<<<< HEAD
-#Session = sessionmaker(bind=engine)
 Session = sessionmaker(bind=engine, autocommit=True)
-=======
-Session = sessionmaker(bind=engine)
->>>>>>> 650dc96a239463226150997b9ed8cc5aa8078899
 session = Session()
 
 
 @app.route('/status')
 def status():
-<<<<<<< HEAD
-# select probe_number,temperature,timestamp from data where timestamp in (select max(timestamp) from data group by probe_number) order by probe_number;
-    max_times = session.query(func.max(sakidb.data.timestamp)).group_by(sakidb.data.probe_number).subquery()
-=======
 #     select data.probe_number,temperature,timestamp from data join (select probe_number, max(timestamp) as ts from data group by probe_number) as xx where xx.ts = timestamp and xx.probe_number = data.probe_number;
-
     max_times = session.query(sakidb.data.probe_number, func.max(sakidb.data.timestamp).label('timestamp')).group_by(sakidb.data.probe_number).subquery()
->>>>>>> 650dc96a239463226150997b9ed8cc5aa8078899
     vals = session.query(sakidb.data.probe_number,
                          sakidb.data.temperature,
                          sakidb.data.humidity,
@@ -77,15 +48,9 @@ def status():
 
 @app.route('/post', methods=['POST'])
 def post():
-<<<<<<< HEAD
-    for probe,temp in request.form.items():
-        session.add(sakidb.data(probe, temp))
-        session.commit()
-=======
     for probe, temp in request.form.items():
         session.add(sakidb.data(probe, temp))
     session.commit()
->>>>>>> 650dc96a239463226150997b9ed8cc5aa8078899
     return " "
 
 
@@ -168,19 +133,10 @@ def jdata(sensor=0):
 
 @app.route('/pstatus/<sensor>')
 def pstatus(sensor=None):
-<<<<<<< HEAD
-    row = session.query(sakidb.data.probe_number,
-                         sakidb.data.temperature,
-                         sakidb.data.humidity,
-                         func.max(sakidb.data.timestamp).label('timestamp')) \
-                                  .filter(sakidb.data.probe_number == sensor).first()
-=======
-    #    select * from data where timestamp = (select max(timestamp) from data where probe_number = 1) and probe_number = 1;
     max_time = session.query(func.max(sakidb.data.timestamp)).filter(sakidb.data.probe_number == sensor).subquery()
     row = session.query(sakidb.data.probe_number, sakidb.data.temperature, sakidb.data.humidity, sakidb.data.timestamp) \
                  .filter(sakidb.data.timestamp == max_time, sakidb.data.probe_number == sensor) \
                  .first()
->>>>>>> 650dc96a239463226150997b9ed8cc5aa8078899
     response = make_response(render_template('status_frag.html', row=row))
     response.headers['Access-Control-Allow-Origin'] = '*'
     return response
