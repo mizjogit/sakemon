@@ -5,7 +5,7 @@ import datetime
 
 from flask import Flask, make_response, jsonify, render_template, request
 
-from sqlalchemy import create_engine, func
+from sqlalchemy import create_engine, func, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import cast, Numeric
 
@@ -34,12 +34,14 @@ session = Session()
 
 @app.route('/status')
 def status():
-    max_times = session.query(func.max(sakidb.data.timestamp)).group_by(sakidb.data.probe_number).subquery()
+#     select data.probe_number,temperature,timestamp from data join (select probe_number, max(timestamp) as ts from data group by probe_number) as xx where xx.ts = timestamp and xx.probe_number = data.probe_number;
+
+    max_times = session.query(sakidb.data.probe_number, func.max(sakidb.data.timestamp).label('timestamp')).group_by(sakidb.data.probe_number).subquery()
     vals = session.query(sakidb.data.probe_number,
                          sakidb.data.temperature,
                          sakidb.data.humidity,
                          sakidb.data.timestamp) \
-                  .filter(sakidb.data.timestamp.in_(max_times)) \
+                  .join(max_times, and_(max_times.c.timestamp == sakidb.data.timestamp, max_times.c.probe_number == sakidb.data.probe_number)) \
                   .order_by(sakidb.data.probe_number)
     response = make_response(render_template('status.html', vals=vals))
     response.headers['Access-Control-Allow-Origin'] = '*'
