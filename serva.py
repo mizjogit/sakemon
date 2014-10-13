@@ -32,6 +32,9 @@ class SemaApp:
             start_response('405 Bad Request', response_headers)
             return iter([])
 
+    def timer():
+        print "hello"
+
     def runner(self, environ, start_response, headers):
         base, fun = os.path.split(environ['PATH_INFO'])
 
