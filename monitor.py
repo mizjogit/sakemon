@@ -51,8 +51,8 @@ def insert_data(probe_number,humidity,temperature):
     cursor.execute ("INSERT INTO data (probe_number,humidity,temperature) VALUES (%s, %s, %s)", (probe_number, humidity, temperature))
     mydb.commit()
     cursor.close()
-    r = requests.post("http://localhost:8088/bmanagea/release", {'bid': probe_number})
-    print r.status_code
+#    r = requests.post("http://localhost:8088/bmanagea/release", {'bid': probe_number})
+#    print r.status_code
  #   exit()
 
 def read_dht22 (PiPin):
