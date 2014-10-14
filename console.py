@@ -8,12 +8,10 @@ from flask import Flask, make_response, jsonify, render_template, request
 from sqlalchemy import create_engine, func, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import cast, Numeric
-
 from flask.ext.bootstrap import Bootstrap
 
 from flask.ext.wtf import Form
 from wtforms import TextField, validators, SubmitField
-
 
 import sakidb
 
@@ -161,7 +159,7 @@ def jsond(sensor=0):
                      .filter(sakidb.data.probe_number == sensor)
         return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
-app.secret_key = "\xcc\x1f\xc6O\x04\x18\x0eFN\xf9\x0c,\xfb4{''<\x9b\xfc\x08\x87\xe9\x13"
+app.secret_key = "\xcd\x1f\xc6O\x04\x18\x0eFN\xf9\x0c,\xfb4{''<\x9b\xfc\x08\x87\xe9\x13"
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080, host='0.0.0.0')
