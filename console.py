@@ -20,11 +20,9 @@ sys.stdout = sys.stderr
 app = Flask(__name__)
 Bootstrap(app)
 CSRF_ENABLED = False
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Schumacher4@localhost/templogger'
-app.config.from_object(__name__)
 app.debug = True
 
-from engineconfig import cstring
+from engineconfig import cstring, servahost
 engine = create_engine(cstring)
 Session = sessionmaker(bind=engine, autocommit=True)
 session = Session()
@@ -40,8 +38,7 @@ def status():
                          sakidb.data.timestamp) \
                   .join(max_times, and_(max_times.c.timestamp == sakidb.data.timestamp, max_times.c.probe_number == sakidb.data.probe_number)) \
                   .order_by(sakidb.data.probe_number)
-    response = make_response(render_template('status.html', vals=vals))
-#    response.headers['Access-Control-Allow-Origin'] = '*'
+    response = make_response(render_template('status.html', vals=vals, servahost=servahost))
     return response
 
 @app.route('/post', methods=['POST'])

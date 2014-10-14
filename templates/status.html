@@ -24,7 +24,7 @@
          {% for row in vals %}
                 <tr class="active-div" 
                      timeout=1000
-                     href="http://sakemon.mizjo.com:8088/bmanagea/block?bid={{row.probe_number}}&okredir=http://sakemon.mizjo.com:8080/pstatus/{{row.probe_number}}">
+                     href="http://{{servahost}}/bmanagea/block?bid={{row.probe_number}}&okredir={{url_for('pstatus', sensor=row.probe_number, _external=True)}}">
                     <td>{{ row.probe_number }}</td>
                     <td>{{ row.temperature }}</td>
                     <td>{{ row.humidity }}</td>
