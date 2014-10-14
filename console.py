@@ -112,25 +112,33 @@ def support_jsonp(f):
 target = 100
 
 
-@app.route('/jdata/<int:sensor>')
+@app.route('/jdata/<sensor>')
 @support_jsonp
-def jdata(sensor=0):
+def jdata(sensor='0'):
     start = datetime.datetime.fromtimestamp(float(request.args.get('start')) / 1000.0)
     end = datetime.datetime.fromtimestamp(float(request.args.get('end')) / 1000.0)
 
     seconds = (end - start).total_seconds()
     seconds_per_sample_wanted = seconds / target
-    qry = session.query(sakidb.data.timestamp,
-                        func.max(sakidb.data.temperature).label('max'),
-                        func.min(sakidb.data.temperature).label('min')) \
-                 .group_by(cast(sakidb.data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
-                 .filter(sakidb.data.probe_number == sensor, sakidb.data.timestamp >= start, sakidb.data.timestamp <= end)
-
-    return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
+    if sensor[0] == 'h':
+        qry = session.query(sakidb.data.timestamp,
+                            func.avg(sakidb.data.humidity).label('avg')) \
+                     .group_by(cast(sakidb.data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
+                     .filter(sakidb.data.probe_number == sensor[1], sakidb.data.timestamp >= start, sakidb.data.timestamp <= end) \
+                     .order_by(sakidb.data.timestamp)
+        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
+    else:
+        qry = session.query(sakidb.data.timestamp,
+                            func.max(sakidb.data.temperature).label('max'),
+                            func.min(sakidb.data.temperature).label('min')) \
+                     .group_by(cast(sakidb.data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
+                     .filter(sakidb.data.probe_number == sensor, sakidb.data.timestamp >= start, sakidb.data.timestamp <= end) \
+                     .order_by(sakidb.data.timestamp)
+        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
 
 @app.route('/pstatus/<sensor>')
-def pstatus(sensor=None):
+def pstatus(sensor='0'):
     max_time = session.query(func.max(sakidb.data.timestamp)).filter(sakidb.data.probe_number == sensor).subquery()
     row = session.query(sakidb.data.probe_number, sakidb.data.temperature, sakidb.data.humidity, sakidb.data.timestamp) \
                  .filter(sakidb.data.timestamp == max_time, sakidb.data.probe_number == sensor) \
@@ -141,12 +149,23 @@ def pstatus(sensor=None):
 
 
 @app.route('/jsond/<sensor>')
-def jsond(sensor=0):
+def jsond(sensor='0'):
     # qry = session.query(sakidb.data).filter(sakidb.data.probe_number == sensor)
     if sensor == 'nav':
         qry = session.query(sakidb.data.timestamp, func.max(sakidb.data.temperature).label('max')) \
-                     .group_by(cast(sakidb.data.timestamp / 3600, Numeric(20, 0)))
+                     .group_by(cast(sakidb.data.timestamp / 3600, Numeric(20, 0))) \
+                     .order_by(sakidb.data.timestamp)
         return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.max) for ii in qry])
+    elif sensor[0] == 'h':
+        start, end = session.query(func.max(sakidb.data.timestamp), func.min(sakidb.data.timestamp)).first()
+        seconds = (end - start).total_seconds()
+        seconds_per_sample_wanted = seconds / target
+        qry = session.query(sakidb.data.timestamp,
+                            func.avg(sakidb.data.humidity).label('avg')) \
+                     .group_by(cast(sakidb.data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
+                     .filter(sakidb.data.probe_number == sensor[1]) \
+                     .order_by(sakidb.data.timestamp)
+        return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
     else:
         start, end = session.query(func.max(sakidb.data.timestamp), func.min(sakidb.data.timestamp)).first()
         seconds = (end - start).total_seconds()
@@ -156,7 +175,8 @@ def jsond(sensor=0):
                             func.max(sakidb.data.temperature).label('max'),
                             func.min(sakidb.data.temperature).label('min')) \
                      .group_by(cast(sakidb.data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
-                     .filter(sakidb.data.probe_number == sensor)
+                     .filter(sakidb.data.probe_number == sensor) \
+                     .order_by(sakidb.data.timestamp)
         return json.dumps([dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
 app.secret_key = "\xcd\x1f\xc6O\x04\x18\x0eFN\xf9\x0c,\xfb4{''<\x9b\xfc\x08\x87\xe9\x13"
