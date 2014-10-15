@@ -22,7 +22,7 @@
                 $.getJSON('/jsond/'+ name, function(data) { 
                     seriesOptions[i] = {
                         name: "Sensor " + name,
-                        data: data
+                        data: data.data
                    }; 
                    if (name == 'h0') {
                         seriesOptions[i].yAxis = 1;
@@ -94,13 +94,14 @@
                         title: {
                             text: 'Temperature Range',
                         },
+                      height: '60%'
                     }, {
                         title: {
                                text: 'Humidity',
                         },
                         top: '75%',
                         offeset: 50,
-                        height: '45%'
+                        height: '65%'
                     }],
                 });
             }
