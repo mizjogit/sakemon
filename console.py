@@ -106,6 +106,10 @@ def support_jsonp(f):
             return f(*args, **kwargs)
     return decorated_function
 
+
+from json import encoder
+encoder.FLOAT_REPR = lambda o: format(o, '.2f')
+
 target = 100
 
 
