@@ -16,7 +16,7 @@
                 colors = Highcharts.getOptions().colors;
 
             $.getJSON('/jsond/nav', function(data) { 
-                navData = data;
+                navData = data.data;
             });
             $.each(names, function(i, name) {
                 $.getJSON('/jsond/'+ name, function(data) { 
