@@ -27,6 +27,8 @@ engine = create_engine(cstring)
 Session = sessionmaker(bind=engine, autocommit=True)
 session = Session()
 
+probe_labels = ['Fermenter Internal', 'Fermenter External', 'Koji Chamber', 'Humidity Probe']
+
 
 @app.route('/status')
 def status():
@@ -38,7 +40,7 @@ def status():
                          sakidb.data.timestamp) \
                   .join(max_times, and_(max_times.c.timestamp == sakidb.data.timestamp, max_times.c.probe_number == sakidb.data.probe_number)) \
                   .order_by(sakidb.data.probe_number)
-    response = make_response(render_template('status.html', vals=vals, servahost=servahost))
+    response = make_response(render_template('status.html', vals=vals, servahost=servahost, probe_labels=probe_labels))
     return response
 
 @app.route('/post', methods=['POST'])
