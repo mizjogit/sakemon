@@ -146,7 +146,7 @@ def pstatus(sensor='0'):
     row = session.query(sakidb.data.probe_number, sakidb.data.temperature, sakidb.data.humidity, sakidb.data.timestamp) \
                  .filter(sakidb.data.timestamp == max_time, sakidb.data.probe_number == sensor) \
                  .first()
-    response = make_response(render_template('status_frag.html', row=row))
+    response = make_response(render_template('status_frag.html', row=row, probe_labels=probe_labels))
     response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
