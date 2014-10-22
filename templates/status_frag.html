@@ -6,9 +6,7 @@
 
 <script type="text/javascript">
         function (chart) {
-            if (!chart.renderer.forExport) {
                     var point = chart.series[0].points[0];
-                    point.update( {{ vals[0].temperature }} );
-            }
-        });
+                    point.update( {{ row[0].temperature }} );
+	}
 </script>
