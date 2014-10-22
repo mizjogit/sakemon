@@ -3,3 +3,12 @@
 <td>{{ row.temperature }}</td>
 <td>{{ row.humidity }}</td>
 <td>{{ row.timestamp.ctime() }}</td>
+
+<script type="text/javascript">
+        function (chart) {
+            if (!chart.renderer.forExport) {
+                    var point = chart.series[0].points[0];
+                    point.update( {{ vals[0].temperature }} );
+            }
+        });
+</script>
