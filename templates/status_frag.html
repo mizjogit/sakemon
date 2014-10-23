@@ -3,10 +3,15 @@
 <td>{{ row.temperature }}</td>
 <td>{{ row.humidity }}</td>
 <td>{{ row.timestamp.ctime() }}</td>
-
 <script type="text/javascript">
+
+
+    (function($){ // encapsulate jQuery
+
         function (chart) {
                     var point = chart.series[0].points[0];
                     point.update( {{ row[0].temperature }} );
-	}
-</script>
+        }
+
+    })(jQuery);
+   </script>

@@ -9,12 +9,17 @@
     <script src="http://code.highcharts.com/modules/exporting.js"></script>
     <script src="{{url_for('static', filename='js/active-div.js')}}" type="text/javascript"></script>
     <script type="text/javascript">
+
+
+
     (function($){ // encapsulate jQuery
 
 
      $(function() {
 
-        $('#dial').highcharts({
+ {% for row in vals %}
+
+        $('#dial{{row.probe_number}}').highcharts({
         chart: {
             type: 'gauge',
             plotBackgroundColor: null,
@@ -24,7 +29,7 @@
         },
 
         title: {
-            text: 'Probe 0'
+            text: 'Probe {{ row.probe_number }}'
         },
 
         pane: {
@@ -111,9 +116,11 @@
         function (chart) {
             if (!chart.renderer.forExport) {
                     var point = chart.series[0].points[0];
-                    point.update( {{ vals[0].temperature }} );
+                    point.update( {{ row.temperature }} );
             }
         });
+
+    {% endfor %}
 
 });
     })(jQuery);
@@ -131,7 +138,30 @@
          </blockquote>
     </div>
 
-    <div class="container" id="dial" style="min-width: 310px; max-width: 400px; height: 300px; margin: 0 auto"></div>
+
+
+        <table class="table">
+        <thead>
+          <tr>
+              <th>Probe 0</th>
+              <th>Probe 1</th>
+              <th>Probe 2</th>
+              <th>Probe 3</th>
+	  </tr>
+	</thead>
+	<tbody>
+
+	 <tr>
+        {% for row in vals %}
+	 <th>
+          <div class="container" id="dial{{row.probe_number}}" style="min-width: 210px; max-width: 300px; height: 250px; margin: 0 auto"></div>
+	</th>
+
+         {% endfor %}
+	</tr>
+	<tbody>
+	</table>
+
 
     <div class="container">
         <table class="table">
