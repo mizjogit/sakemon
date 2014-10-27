@@ -7,6 +7,7 @@ import random
 import dhtreader
 import gevent.monkey
 import time
+import requests
 
 from sqlalchemy import create_engine, func, and_
 from sqlalchemy.orm import sessionmaker
@@ -52,6 +53,8 @@ class CollectApp:
         self.session = sessionmaker(bind=create_engine(cstring))()
         self.temp = 20
         self.loops = 0
+	temp = 0
+	humidity = 0
 
     def application(self, environ, start_response):
         response_headers = [('Content-type', 'text/plain')]
@@ -59,12 +62,16 @@ class CollectApp:
         return iter([])
 
     def read_ds18B20(self):
+	global humidity
+	global temp
         while True:
 	    for port in range(0,3):
   	    	w1devicefile = '/sys/bus/w1/devices/' + probe[port] + '/w1_slave'
   	    	temp = get_temp(w1devicefile)
     		print 'DS18B20 Probe={0} Temp={1:0.1f} Humidity={2:0.1f}' .format(port, temp, humidity)
-            	dte = sakidb.DataTable(probe_number=port,temperature=temp,humidity=humidity)
+		r = requests.post("http://localhost:8088/bmanagea/release", {'bid': port})
+		print (r)
+            	dte = sakidb.DataTable(probe_number=port,temperature=temp, humidity=humidity)
             	self.session.add(dte)
             	self.session.commit()
             gevent.sleep(self.event_rate)
@@ -72,12 +79,15 @@ class CollectApp:
 
     def read_dht22(self):
 	global humidity
+	global temp
         while True:
             try:
                temp,humidity = dhtreader.read(22,22) 
             except TypeError:
                print "Read Error"
  	    print 'DHT22 Probe=3 Temp={1:0.1f} Humidity={2:0.1f}' .format(3, temp, humidity)
+	    r = requests.post("http://localhost:8088/bmanagea/release", {'bid': 3})
+	    print(r)
             dte = sakidb.DataTable(probe_number=3,temperature=temp,humidity=humidity)
             self.session.add(dte)
             self.session.commit()
