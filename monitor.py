@@ -44,10 +44,9 @@ def insert_data(probe_number,humidity,temperature):
     print 'Inserting Probe={0} Temp={1:0.1f} Humidity={2:0.1f}' .format(probe_number, temperature, humidity)
     cursor = mydb.cursor()
     cursor.execute ("INSERT INTO data (probe_number,humidity,temperature) VALUES (%s, %s, %s)", (probe_number, humidity, temperature))
-    mydb.commit()
     cursor.close()
     r = requests.post("http://localhost:8088/bmanagea/release", {'bid': probe_number})
-#    print r.status_code
+    mydb.commit()
 
 def read_ds18B20 (port):
   w1devicefile = '/sys/bus/w1/devices/' + probe[port] + '/w1_slave'

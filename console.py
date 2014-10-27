@@ -23,7 +23,7 @@ CSRF_ENABLED = False
 app.debug = True
 
 from engineconfig import cstring, servahost
-engine = create_engine(cstring)
+engine = create_engine(cstring, pool_recycle=3600)
 Session = sessionmaker(bind=engine, autocommit=True)
 session = Session()
 
@@ -138,6 +138,17 @@ def jdata(sensor='0'):
                      .filter(sakidb.data.probe_number == sensor, sakidb.data.timestamp >= start, sakidb.data.timestamp <= end) \
                      .order_by(sakidb.data.timestamp)
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
+
+
+@app.route('/gauge/<sensor>')
+def gstatus(sensor='0'):
+    max_time = session.query(func.max(sakidb.data.timestamp)).filter(sakidb.data.probe_number == sensor).subquery()
+    row = session.query(sakidb.data.probe_number, sakidb.data.temperature, sakidb.data.humidity, sakidb.data.timestamp) \
+                 .filter(sakidb.data.timestamp == max_time, sakidb.data.probe_number == sensor) \
+                 .first()
+    response = make_response(render_template('status_gauge.html', row=row, probe_labels=probe_labels))
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
 
 
 @app.route('/pstatus/<sensor>')
