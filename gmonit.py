@@ -4,8 +4,9 @@ import urlparse
 import datetime
 import os
 import random
-
+import dhtreader
 import gevent.monkey
+import time
 
 from sqlalchemy import create_engine, func, and_
 from sqlalchemy.orm import sessionmaker
@@ -21,7 +22,6 @@ import sakidb
 
 probe=['28-00000405860e','28-00000405bb1e','28-00000405c040']
 speriod=10
-humidity=0
 
 gevent.monkey.patch_all()
 
@@ -58,31 +58,38 @@ class CollectApp:
         start_response("200 OK", response_headers)
         return iter([])
 
-    def timer(self):
-        while True:
-            dte = sakidb.DataTable(timestamp=datetime.datetime.now(),
-                                   probe_number=random.randint(0, 4),
-                                   temperature=self.temp + (self.loops % 5))
-            self.loops += 1
-            self.session.add(dte)
-            self.session.commit()
-            gevent.sleep(self.event_rate)
-
     def read_ds18B20(self):
         while True:
-	    for probe in range(0,3):
+	    for port in range(0,3):
   	    	w1devicefile = '/sys/bus/w1/devices/' + probe[port] + '/w1_slave'
-  	    	temperature = get_temp(w1devicefile)
-   	    	#insert_data (port,humidity,temperature)
-            	dte = sakidb.DataTable(timestamp=datetime.datetime.now(),
-                                   	probe_number=probe,
-                                   	temperature=temperature)
+  	    	temp = get_temp(w1devicefile)
+    		print 'DS18B20 Probe={0} Temp={1:0.1f} Humidity={2:0.1f}' .format(port, temp, humidity)
+            	dte = sakidb.DataTable(probe_number=port,temperature=temp,humidity=humidity)
             	self.session.add(dte)
             	self.session.commit()
             gevent.sleep(self.event_rate)
 
 
+    def read_dht22(self):
+	global humidity
+        while True:
+            try:
+               temp,humidity = dhtreader.read(22,22) 
+            except TypeError:
+               print "Read Error"
+ 	    print 'DHT22 Probe=3 Temp={1:0.1f} Humidity={2:0.1f}' .format(3, temp, humidity)
+            dte = sakidb.DataTable(probe_number=3,temperature=temp,humidity=humidity)
+            self.session.add(dte)
+            self.session.commit()
+            gevent.sleep(self.event_rate)
+
 if __name__ == '__main__':
+    global humidity
     semapp = CollectApp(cstring)
-    gevent.spawn(functools.partial(CollectApp.timer, semapp))
+    print("Initialising DHT22")
+    dhtreader.init()
+    time.sleep(3)
+    print("Done")
+    gevent.spawn(functools.partial(CollectApp.read_dht22, semapp))
+    gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
     WSGIServer(('0.0.0.0', 8089), functools.partial(CollectApp.application, semapp)).serve_forever()
