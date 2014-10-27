@@ -71,7 +71,7 @@ def alertconfig():
     if request.method == 'POST':
         form = AlertForm()
         if form.validate():
-            nf = sakidb.config(form.target.DataTable, form.attribute.DataTable, form.op.data, form.value.data)
+            nf = sakidb.config(form.target.data, form.attribute.data, form.op.data, form.value.data)
             session.merge(nf)
             session.commit()
     else:
