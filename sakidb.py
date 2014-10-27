@@ -9,24 +9,18 @@ import datetime
 dbase = declarative_base()
 
 
-class data(dbase):
+class DataTable(dbase):
     __tablename__ = 'data'
-    probe_number = Column(INTEGER(), primary_key=True, nullable=False)
-    temperature = Column(FLOAT(), primary_key=False, nullable=False)
-    humidity = Column(FLOAT(), primary_key=False, nullable=False)
     timestamp = Column(TIMESTAMP(), primary_key=True, nullable=False, default=text(u'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
-
-    def __init__(self, probe_number, temperature, humidity):
-        self.probe_number = probe_number
-        self.temperature = temperature
-        self.humidity = humidity
-        self.timestamp = datetime.datetime.now()
+    probe_number = Column(INTEGER(), primary_key=True, nullable=False)
+    temperature = Column(FLOAT(), nullable=False)
+    humidity = Column(FLOAT())
 
     def __repr__(self):
         return "<date(%d, %3.2f,% 3.2f, %s)>" % (self.probe_number, self.temperature, self.humidity, str(self.timestamp)) 
 
 
-Index(u'probe_number', data.probe_number, unique=False)
+Index(u'probe_number', DataTable.probe_number, unique=False)
 
 
 class config(dbase):
