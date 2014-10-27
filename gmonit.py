@@ -18,7 +18,33 @@ from engineconfig import cstring, servahost
 
 import sakidb
 
+
+probe=['28-00000405860e','28-00000405bb1e','28-00000405c040']
+speriod=10
+humidity=0
+
 gevent.monkey.patch_all()
+
+def get_temp(devicefile):
+    try:
+        fileobj = open(devicefile,'r')
+        lines = fileobj.readlines()
+        fileobj.close()
+    except:
+        return None
+
+    # get the status from the end of line 1 
+    status = lines[0][-4:-1]
+
+    # is the status is ok, get the temperature from line 2
+    if status=="YES":
+        tempstr= lines[1][-6:-1]
+        tempvalue=float(tempstr)/1000
+        return(tempvalue)
+    else:
+        print("There was an error.")
+        return None
+
 
 class CollectApp:
     def __init__(self, cstring, event_rate=10):
@@ -41,6 +67,20 @@ class CollectApp:
             self.session.add(dte)
             self.session.commit()
             gevent.sleep(self.event_rate)
+
+    def read_ds18B20(self):
+        while True:
+	    for probe in range(0,3):
+  	    	w1devicefile = '/sys/bus/w1/devices/' + probe[port] + '/w1_slave'
+  	    	temperature = get_temp(w1devicefile)
+   	    	#insert_data (port,humidity,temperature)
+            	dte = sakidb.DataTable(timestamp=datetime.datetime.now(),
+                                   	probe_number=probe,
+                                   	temperature=temperature)
+            	self.session.add(dte)
+            	self.session.commit()
+            gevent.sleep(self.event_rate)
+
 
 if __name__ == '__main__':
     semapp = CollectApp(cstring)

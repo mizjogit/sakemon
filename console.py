@@ -143,9 +143,9 @@ def jdata(sensor='0'):
 
 @app.route('/gauge/<sensor>')
 def gstatus(sensor='0'):
-    max_time = session.query(func.max(sakidb.data.timestamp)).filter(sakidb.data.probe_number == sensor).subquery()
-    row = session.query(sakidb.data.probe_number, sakidb.data.temperature, sakidb.data.humidity, sakidb.data.timestamp) \
-                 .filter(sakidb.data.timestamp == max_time, sakidb.data.probe_number == sensor) \
+    max_time = session.query(func.max(DataTable.timestamp)).filter(DataTable.probe_number == sensor).subquery()
+    row = session.query(DataTable.probe_number, DataTable.temperature, DataTable.humidity, DataTable.timestamp) \
+                 .filter(DataTable.timestamp == max_time, DataTable.probe_number == sensor) \
                  .first()
     response = make_response(render_template('status_gauge.html', row=row, probe_labels=probe_labels))
     response.headers['Access-Control-Allow-Origin'] = '*'
