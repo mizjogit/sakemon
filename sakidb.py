@@ -12,7 +12,7 @@ dbase = declarative_base()
 class DataTable(dbase):
     __tablename__ = 'data'
 #    timestamp = Column(TIMESTAMP(), primary_key=True, nullable=False, default=text(u'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
-    timestamp = Column(TIMESTAMP(), primary_key=True, nullable=False)
+    timestamp = Column(TIMESTAMP(), primary_key=True, nullable=False, default=datetime.datetime.now())
     probe_number = Column(INTEGER(), primary_key=True, nullable=False)
     temperature = Column(FLOAT(), nullable=False)
     humidity = Column(FLOAT())
