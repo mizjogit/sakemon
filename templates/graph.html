@@ -12,7 +12,7 @@
                 yAxisOptions = [],
                 navData = [],
                 seriesCounter = 0,
-                names = ['0', '1', '2', '3', 'h0'],
+                names = ['0', '1', '2', '3', 'h3'],
                 colors = Highcharts.getOptions().colors;
 
             $.getJSON('/jsond/nav', function(data) { 
@@ -24,7 +24,7 @@
                         name: "Sensor " + name,
                         data: data.data
                    }; 
-                   if (name == 'h0') {
+                   if (name == 'h3') {
                         seriesOptions[i].yAxis = 1;
                         seriesOptions[i].type = 'line';
                     } else {
