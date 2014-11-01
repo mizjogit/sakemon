@@ -29,6 +29,12 @@ speriod = 10
 
 gevent.monkey.patch_all()
 
+@route('/ioupdate', methods=['POST'])
+def post():
+    for port, value in request.form.items():
+	logger.info("IO Update port=%s value=%s" % (port, value))
+    return " "
+
 
 def get_ds_temp(port):
     devicefile = '/sys/bus/w1/devices/' + probe[port] + '/w1_slave'
