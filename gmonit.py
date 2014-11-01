@@ -5,6 +5,8 @@ import time
 import requests
 import optparse
 import logging
+import subprocess
+import re
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -68,12 +70,7 @@ class CollectApp:
         self.sleep_interval = speriod
         self.unlock_target = 'http://localhost:8088/bmanagea/release'
         if not simulator:
-            import dhtreader
-            self.dhtreader = dhtreader
             logger.info("Initialising DHT22")	
-            self.dhtreader.init()
-	    time.sleep(3)
-	    logger.info("done") 
             self.get_ds_temp = get_ds_temp
         else:
             self.dhtreader = SimulateDhtReader
@@ -97,15 +94,17 @@ class CollectApp:
 
     def read_dht22(self):
         while True:
-            try:
-                temp, humidity = self.dhtreader.read(22, 22)
-                logger.info('DHT22 Probe=3 Temp={1:0.1f} Humidity={2:0.1f}'.format(3, temp, humidity))
-                #logger.info('unlocker reply %s' % requests.post(self.unlock_target, {'bid': 3}))
-                dte = sakidb.DataTable(probe_number=3, temperature=temp, humidity=humidity)
-                self.session.add(dte)
-                self.session.commit()
-            except TypeError as tt:
-                logger.error("DHT22 Read Error '%s'" % str(tt))
+	    output = subprocess.check_output(["/home/sakemon/sakemon/Adafruit_DHT", "2302", "22" ]);
+    	    matches = re.search("Temp =\s+([0-9.]+)", output)
+    	    if (matches):
+        	   temp = float(matches.group(1))
+           	   matches = re.search("Hum =\s+([0-9.]+)", output)
+        	   humidity = float(matches.group(1))
+            logger.info('DHT22 Probe=3 Temp={1:0.1f} Humidity={2:0.1f}'.format(3, temp, humidity))
+           #logger.info('unlocker reply %s' % requests.post(self.unlock_target, {'bid': 3}))
+            dte = sakidb.DataTable(probe_number=3, temperature=temp, humidity=humidity)
+            self.session.add(dte)
+            self.session.commit()
             gevent.sleep(self.sleep_interval)
 
 if __name__ == '__main__':
@@ -114,5 +113,5 @@ if __name__ == '__main__':
     options, args = parser.parse_args()
     semapp = CollectApp(cstring, options.simulator)
     gevent.spawn(functools.partial(CollectApp.read_dht22, semapp))
-    gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
+    #gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
     WSGIServer(('0.0.0.0', 8089), functools.partial(CollectApp.application, semapp)).serve_forever()
