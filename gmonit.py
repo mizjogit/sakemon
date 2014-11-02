@@ -5,6 +5,7 @@ import time
 import requests
 import optparse
 import logging
+import datetime
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -90,7 +91,8 @@ class CollectApp:
                 temp = self.get_ds_temp(port)
                 logger.info('DS18B20 Probe={0} Temp={1:0.1f}'.format(port, temp))
                 #logger.info('unlocker reply %s' % requests.post(self.unlock_target, {'bid': port}))
-                dte = sakidb.DataTable(probe_number=port, temperature=temp)
+                dte = sakidb.Data(probe_number=port, temperature=temp, timestamp=datetime.datetime.now())
+                print dte
                 self.session.add(dte)
                 self.session.commit()
             gevent.sleep(self.sleep_interval)
@@ -101,7 +103,7 @@ class CollectApp:
                 temp, humidity = self.dhtreader.read(22, 22)
                 logger.info('DHT22 Probe=3 Temp={1:0.1f} Humidity={2:0.1f}'.format(3, temp, humidity))
                 #logger.info('unlocker reply %s' % requests.post(self.unlock_target, {'bid': 3}))
-                dte = sakidb.DataTable(probe_number=3, temperature=temp, humidity=humidity)
+                dte = sakidb.Data(probe_number=3, temperature=temp, humidity=humidity, timestamp=datetime.datetime.now())
                 self.session.add(dte)
                 self.session.commit()
             except TypeError as tt:
