@@ -2,7 +2,7 @@ import optparse
 
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import types, Column  # , Index
+from sqlalchemy import types, Column, Table, inspect  # , Index
 import datetime
 import time
 import sys
@@ -10,10 +10,8 @@ import sys
 dbase = declarative_base()
 
 
-class PRecordBase(object):
-    @declared_attr
-    def __tablename__(cls):
-        return cls.__name__.lower()
+class Data(dbase):
+    __tablename__ = 'data'
     timestamp = Column(types.DateTime, primary_key=True, nullable=False, default=datetime.datetime.now())
     probe_number = Column(types.Integer, primary_key=True, autoincrement=False, nullable=False)
     temperature = Column(types.Float, nullable=False)
@@ -25,15 +23,6 @@ class PRecordBase(object):
                 str(self.timestamp))
 
 
-class Data(PRecordBase, dbase):
-    pass
-
-
-class DataHour(PRecordBase, dbase):
-    pass
-
-class DataMinute(PRecordBase, dbase):
-    pass
 
 # Index(u'probe_number', DataTable.probe_number, unique=False)
 # Index(u'probe_number', DataHour.probe_number, unique=False)
@@ -59,7 +48,7 @@ def add(session, period, agg_table):
     if not last_data_time:
         print "no last, probably no data"
         return
-    last = session.query(func.max(agg_table.timestamp)).scalar()
+    last = session.query(func.max(agg_table.c.timestamp)).scalar()
     if not last:
         last = session.query(func.min(Data.timestamp).label('timestamp')).scalar()
     if (last_data_time - last).seconds < period:
@@ -87,16 +76,21 @@ if __name__ == '__main__':
     options, args = parser.parse_args()
 
     engine = create_engine(cstring, pool_recycle=3600)
+    aggs = [60, 600, 3600]
+    atables = list()
+    for ii, agglevel in enumerate(aggs):
+        atables.append(Table('data%d' % agglevel,  dbase.metadata, *map(lambda c: c.copy(), inspect(Data).columns)))
+
     if options.create:
-        print CreateTable(DataHour.__table__).compile()
         dbase.metadata.create_all(engine)
+
     Session = sessionmaker(bind=engine)
     session = Session()
 
 #    add(session, period=60, agg_table=DataMinute)
     if options.monitor:
         while True:
-            add(session, period=60, agg_table=DataMinute)
-            add(session, period=3600, agg_table=DataHour)
+            for agglevel, aggtable in zip(aggs, atables):
+                add(session, period=agglevel, agg_table=aggtable)
             session.commit()
             time.sleep(60)
