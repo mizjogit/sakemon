@@ -14,7 +14,7 @@ from flask.ext.wtf import Form
 from wtforms import TextField, validators, SubmitField
 
 import sakidb
-from sakidb import Data
+from sakidb import DataTable
 
 sys.stdout = sys.stderr
 
@@ -34,27 +34,27 @@ probe_labels = ['Fermenter Internal', 'Fermenter External', 'Koji Chamber', 'Hum
 @app.route('/status')
 def status():
 #     select data.probe_number,temperature,timestamp from data join (select probe_number, max(timestamp) as ts from data group by probe_number) as xx where xx.ts = timestamp and xx.probe_number = data.probe_number;
-    max_times = session.query(Data.probe_number, func.max(Data.timestamp).label('timestamp')).group_by(Data.probe_number).subquery()
-    vals = session.query(Data.probe_number,
-                         Data.temperature,
-                         Data.humidity,
-                         Data.timestamp) \
-                  .join(max_times, and_(max_times.c.timestamp == Data.timestamp, max_times.c.probe_number == Data.probe_number)) \
-                  .order_by(Data.probe_number)
+    max_times = session.query(DataTable.probe_number, func.max(DataTable.timestamp).label('timestamp')).group_by(DataTable.probe_number).subquery()
+    vals = session.query(DataTable.probe_number,
+                         DataTable.temperature,
+                         DataTable.humidity,
+                         DataTable.timestamp) \
+                  .join(max_times, and_(max_times.c.timestamp == DataTable.timestamp, max_times.c.probe_number == DataTable.probe_number)) \
+                  .order_by(DataTable.probe_number)
     response = make_response(render_template('status.html', vals=vals, servahost=servahost, probe_labels=probe_labels))
     return response
 
 @app.route('/post', methods=['POST'])
 def post():
     for probe, temp in request.form.items():
-        session.add(Data(probe, temp))
+        session.add(DataTable(probe, temp))
     session.commit()
     return " "
 
 
 @app.route('/report')
 def report():
-    vals = session.query(Data).order_by(Data.timestamp.desc()).limit(12)
+    vals = session.query(DataTable).order_by(DataTable.timestamp.desc()).limit(12)
     return render_template('report.html', vals=vals)
 
 
@@ -125,27 +125,27 @@ def jdata(sensor='0'):
     seconds = (end - start).total_seconds()
     seconds_per_sample_wanted = seconds / target
     if sensor[0] == 'h':
-        qry = session.query(Data.timestamp,
-                            func.avg(Data.humidity).label('avg')) \
-                     .group_by(cast(Data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
-                     .filter(Data.probe_number == sensor[1], Data.timestamp >= start, Data.timestamp <= end) \
-                     .order_by(Data.timestamp)
+        qry = session.query(DataTable.timestamp,
+                            func.avg(DataTable.humidity).label('avg')) \
+                     .group_by(cast(DataTable.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
+                     .filter(DataTable.probe_number == sensor[1], DataTable.timestamp >= start, DataTable.timestamp <= end) \
+                     .order_by(DataTable.timestamp)
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
     else:
-        qry = session.query(Data.timestamp,
-                            func.max(Data.temperature).label('max'),
-                            func.min(Data.temperature).label('min')) \
-                     .group_by(cast(Data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
-                     .filter(Data.probe_number == sensor, Data.timestamp >= start, Data.timestamp <= end) \
-                     .order_by(Data.timestamp)
+        qry = session.query(DataTable.timestamp,
+                            func.max(DataTable.temperature).label('max'),
+                            func.min(DataTable.temperature).label('min')) \
+                     .group_by(cast(DataTable.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
+                     .filter(DataTable.probe_number == sensor, DataTable.timestamp >= start, DataTable.timestamp <= end) \
+                     .order_by(DataTable.timestamp)
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
 
 @app.route('/gauge/<sensor>')
 def gstatus(sensor='0'):
-    max_time = session.query(func.max(Data.timestamp)).filter(Data.probe_number == sensor).subquery()
-    row = session.query(Data.probe_number, Data.temperature, Data.humidity, Data.timestamp) \
-                 .filter(Data.timestamp == max_time, Data.probe_number == sensor) \
+    max_time = session.query(func.max(DataTable.timestamp)).filter(DataTable.probe_number == sensor).subquery()
+    row = session.query(DataTable.probe_number, DataTable.temperature, DataTable.humidity, DataTable.timestamp) \
+                 .filter(DataTable.timestamp == max_time, DataTable.probe_number == sensor) \
                  .first()
     response = make_response(render_template('status_gauge.html', row=row, probe_labels=probe_labels))
     response.headers['Access-Control-Allow-Origin'] = '*'
@@ -154,9 +154,9 @@ def gstatus(sensor='0'):
 
 @app.route('/pstatus/<sensor>')
 def pstatus(sensor='0'):
-    max_time = session.query(func.max(Data.timestamp)).filter(Data.probe_number == sensor).subquery()
-    row = session.query(Data.probe_number, Data.temperature, Data.humidity, Data.timestamp) \
-                 .filter(Data.timestamp == max_time, Data.probe_number == sensor) \
+    max_time = session.query(func.max(DataTable.timestamp)).filter(DataTable.probe_number == sensor).subquery()
+    row = session.query(DataTable.probe_number, DataTable.temperature, DataTable.humidity, DataTable.timestamp) \
+                 .filter(DataTable.timestamp == max_time, DataTable.probe_number == sensor) \
                  .first()
     response = make_response(render_template('status_frag.html', row=row, probe_labels=probe_labels))
     response.headers['Access-Control-Allow-Origin'] = '*'
@@ -167,31 +167,31 @@ def pstatus(sensor='0'):
 def jsond(sensor='0'):
     # qry = session.query(Data).filter(Data.probe_number == sensor)
     if sensor == 'nav':
-        qry = session.query(Data.timestamp, func.max(Data.temperature).label('max')) \
-                     .group_by(cast(Data.timestamp / 3600, Numeric(20, 0))) \
-                     .order_by(Data.timestamp)
+        qry = session.query(DataTable.timestamp, func.max(DataTable.temperature).label('max')) \
+                     .group_by(cast(DataTable.timestamp / 3600, Numeric(20, 0))) \
+                     .order_by(DataTable.timestamp)
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.max) for ii in qry])
     elif sensor[0] == 'h':
-        start, end = session.query(func.max(Data.timestamp), func.min(Data.timestamp)).first()
+        start, end = session.query(func.max(DataTable.timestamp), func.min(DataTable.timestamp)).first()
         seconds = (end - start).total_seconds()
         seconds_per_sample_wanted = seconds / target
-        qry = session.query(Data.timestamp,
-                            func.avg(Data.humidity).label('avg')) \
-                     .group_by(cast(Data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
-                     .filter(Data.probe_number == sensor[1]) \
-                     .order_by(Data.timestamp)
+        qry = session.query(DataTable.timestamp,
+                            func.avg(DataTable.humidity).label('avg')) \
+                     .group_by(cast(DataTable.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
+                     .filter(DataTable.probe_number == sensor[1]) \
+                     .order_by(DataTable.timestamp)
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
     else:
-        start, end = session.query(func.max(Data.timestamp), func.min(Data.timestamp)).first()
+        start, end = session.query(func.max(DataTable.timestamp), func.min(DataTable.timestamp)).first()
         seconds = (end - start).total_seconds()
         seconds_per_sample_wanted = seconds / target
-        qry = session.query(Data.timestamp,
-                            func.avg(Data.temperature).label('avg'),
-                            func.max(Data.temperature).label('max'),
-                            func.min(Data.temperature).label('min')) \
-                     .group_by(cast(Data.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
-                     .filter(Data.probe_number == sensor) \
-                     .order_by(Data.timestamp)
+        qry = session.query(DataTable.timestamp,
+                            func.avg(DataTable.temperature).label('avg'),
+                            func.max(DataTable.temperature).label('max'),
+                            func.min(DataTable.temperature).label('min')) \
+                     .group_by(cast(DataTable.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
+                     .filter(DataTable.probe_number == sensor) \
+                     .order_by(DataTable.timestamp)
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
 app.secret_key = "\xcd\x1f\xc6O\x04\x18\x0eFN\xf9\x0c,\xfb4{''<\x9b\xfc\x08\x87\xe9\x13"
