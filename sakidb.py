@@ -3,10 +3,59 @@ import optparse
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import types, Column, Table, inspect, Index
+from sqlalchemy import insert
 import datetime
 import time
 
 dbase = declarative_base()
+
+
+class ManagedTable:
+    def __init__(self, base_table, aggs, pvt):
+        self.base_table = base_table
+        self.aggs = aggs
+        self.pvt = pvt
+        self.atables = list()
+        for ii, agglevel in enumerate(aggs):
+            cols = list()
+            self.pvt_fields = list()
+            for col in inspect(self.base_table).columns:
+                if col.name not in self.pvt:
+                    cols.append(col)
+            for col_name, spt in self.pvt.iteritems():
+                for fun in spt:
+                    fname = '%s_%s' % (col_name, str(fun()).replace('()', ''))
+                    self.pvt_fields.append(fname)
+                    cols.append(Column(fname, types.Float))
+            self.atables.append(Table('data%d' % agglevel, dbase.metadata, *map(lambda c: c.copy(), cols)))
+
+    def add(self, session, period, agg_table, last_data_time, pvt, pvt_field_names):
+        last = session.query(func.max(agg_table.c.timestamp)).scalar()
+        if not last:
+            last = session.query(func.min(self.base_table.timestamp).label('timestamp')).scalar()
+        if (last_data_time - last).total_seconds() < period:
+            print "Not data for tailed agg at", period, \
+                  "last", last, \
+                  "last_data_time", last_data_time, \
+                  "seconds", (last_data_time - last).total_seconds(), \
+                  "days", (last_data_time - last).days
+            return
+        last += datetime.timedelta(seconds=period)
+        funs = list()
+        insp = inspect(self.base_table)
+        for field, pvt_funs in self.pvt.items():
+            funs.extend([fun(insp.columns[field]) for fun in pvt_funs])
+        qry = session.query(self.base_table.timestamp, self.base_table.probe_number, *funs) \
+                     .group_by(func.round(func.unix_timestamp(self.base_table.timestamp).op('DIV')(period)), self.base_table.probe_number) \
+                     .filter(self.base_table.timestamp > last)
+        session.execute(insert(agg_table).from_select(['timestamp', 'probe_number'] + pvt_field_names, qry))
+
+    def update(self, session, last_data_time):
+        for agglevel, aggtable in zip(self.aggs, self.atables):
+            self.add(session, agglevel, aggtable, last_data_time, self.pvt, self.pvt_fields)
+
+    def optimal(self, probe_number, start_date, end_date):
+        pass
 
 
 class DataTable(dbase):
@@ -18,8 +67,8 @@ class DataTable(dbase):
 
     def __repr__(self):
         return "<date(%d, %3.2f,% 3.2f, %s)>" % (self.probe_number, self.temperature,
-                self.humidity if self.humidity else 0.0,
-                str(self.timestamp))
+                                                 self.humidity if self.humidity else 0.0,
+                                                 str(self.timestamp))
 
 
 # this one is use for max(DataTable.timestamp)
@@ -45,34 +94,10 @@ class config(dbase):
         return "%s,%s,%s,%s" % (self.target, self.attribute, self.op, self.value)
 
 
-def add(session, period, agg_table, last_data_time, pvt, pvt_field_names):
-    last = session.query(func.max(agg_table.c.timestamp)).scalar()
-    if not last:
-        last = session.query(func.min(DataTable.timestamp).label('timestamp')).scalar()
-    if (last_data_time - last).total_seconds() < period:
-        print "Not data for tailed agg at", period, \
-              "last", last, \
-              "last_data_time", last_data_time, \
-              "seconds", (last_data_time - last).total_seconds(), \
-              "days", (last_data_time - last).days
-        return
-    last += datetime.timedelta(seconds=period)
-    funs = list()
-    insp = inspect(DataTable)
-    for field, pvt_funs in pvt.items():
-        funs.extend([fun(insp.columns[field]) for fun in pvt_funs])
-    qry = session.query(DataTable.timestamp, DataTable.probe_number, *funs) \
-                 .group_by(func.round(func.unix_timestamp(DataTable.timestamp).op('DIV')(period)), DataTable.probe_number) \
-                 .filter(DataTable.timestamp > last)
-    session.execute(insert(agg_table).from_select(['timestamp', 'probe_number'] + pvt_field_names, qry))
-
 if __name__ == '__main__':
     from engineconfig import cstring
     from sqlalchemy import func
-    from sqlalchemy import cast, Numeric
     from sqlalchemy import create_engine
-    from sqlalchemy.schema import CreateTable
-    from sqlalchemy import insert
 
     parser = optparse.OptionParser()
     parser.add_option("-c", "--create", dest="create", action="store_true", default=None, help="Create Tables")
@@ -82,26 +107,9 @@ if __name__ == '__main__':
     options, args = parser.parse_args()
 
     engine = create_engine(cstring, pool_recycle=3600)
-    aggs = [60, 600, 3600, 86400]
-    atables = list()
-    for ii, agglevel in enumerate(aggs):
-        #create columns for fields other than timestamp, probe_number
-        # don't want original temperature, humidity, do want proce number, timestamp
-        pvt = {'temperature': [func.min, func.max, func.avg],
-                'humidity': [func.avg]}
-
-        # parse and remove primaries, keep others, added product of map above
-        cols = list()
-        pvt_fields = list()
-        for col in inspect(DataTable).columns:
-            if col.name not in pvt:
-                cols.append(col)
-        for col_name, spt in pvt.iteritems():
-            for fun in spt:
-                fname = '%s_%s' % (col_name, str(fun()).replace('()', ''))
-                pvt_fields.append(fname)
-                cols.append(Column(fname, types.Float))
-        atables.append(Table('data%d' % agglevel, dbase.metadata, *map(lambda c: c.copy(), cols)))
+    pvt = {'temperature': [func.min, func.max, func.avg],
+           'humidity': [func.avg]}
+    mtable = ManagedTable(aggs=[60, 600, 3600, 86400], base_table=DataTable, pvt=pvt)
 
     if options.create:
         dbase.metadata.create_all(engine)
@@ -117,7 +125,6 @@ if __name__ == '__main__':
                     session.execute(table.delete())
                 if options.drop_all:
                     session.execute('drop table %s' % table.name)
-
         session.commit()
 
 #    add(session, period=60, agg_table=DataMinute)
@@ -128,7 +135,6 @@ if __name__ == '__main__':
                 print "no last, probably no data"
                 time.sleep(60)
                 continue
-            for agglevel, aggtable in zip(aggs, atables):
-                add(session, agglevel, aggtable, last_data_time, pvt, pvt_fields)
+            mtable.update(session, last_data_time)
             session.commit()
             time.sleep(60)
