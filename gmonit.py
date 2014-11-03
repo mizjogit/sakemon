@@ -29,11 +29,11 @@ speriod = 10
 
 gevent.monkey.patch_all()
 
-@route('/ioupdate', methods=['POST'])
-def post():
-    for port, value in request.form.items():
-	logger.info("IO Update port=%s value=%s" % (port, value))
-    return " "
+#@route('/ioupdate', methods=['POST'])
+#def post():
+#    for port, value in request.form.items():
+#	logger.info("IO Update port=%s value=%s" % (port, value))
+#    return " "
 
 
 def get_ds_temp(port):
@@ -106,11 +106,11 @@ class CollectApp:
         	   temp = float(matches.group(1))
            	   matches = re.search("Hum =\s+([0-9.]+)", output)
         	   humidity = float(matches.group(1))
-            logger.info('DHT22 Probe=3 Temp={1:0.1f} Humidity={2:0.1f}'.format(3, temp, humidity))
-           #logger.info('unlocker reply %s' % requests.post(self.unlock_target, {'bid': 3}))
-            dte = sakidb.DataTable(probe_number=3, temperature=temp, humidity=humidity)
-            self.session.add(dte)
-            self.session.commit()
+            	   logger.info('DHT22 Probe=3 Temp={1:0.1f} Humidity={2:0.1f}'.format(3, temp, humidity))
+           	  #logger.info('unlocker reply %s' % requests.post(self.unlock_target, {'bid': 3}))
+            	   dte = sakidb.DataTable(probe_number=3, temperature=temp, humidity=humidity)
+            	   self.session.add(dte)
+            	   self.session.commit()
             gevent.sleep(self.sleep_interval)
 
 if __name__ == '__main__':
