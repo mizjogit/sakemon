@@ -29,30 +29,27 @@ class ManagedTable:
                     cols.append(Column(fname, types.Float))
             self.atables.append(Table('data%d' % agglevel, dbase.metadata, *map(lambda c: c.copy(), cols)))
 
-    def add(self, session, period, agg_table, last_data_time, pvt, pvt_field_names):
-        last = session.query(func.max(agg_table.c.timestamp)).scalar()
-        if not last:
-            last = session.query(func.min(self.base_table.timestamp).label('timestamp')).scalar()
-        if (last_data_time - last).total_seconds() < period:
-            print "Not data for tailed agg at", period, \
-                  "last", last, \
-                  "last_data_time", last_data_time, \
-                  "seconds", (last_data_time - last).total_seconds(), \
-                  "days", (last_data_time - last).days
-            return
-        last += datetime.timedelta(seconds=period)
-        funs = list()
-        insp = inspect(self.base_table)
-        for field, pvt_funs in self.pvt.items():
-            funs.extend([fun(insp.columns[field]) for fun in pvt_funs])
-        qry = session.query(self.base_table.timestamp, self.base_table.probe_number, *funs) \
-                     .group_by(func.round(func.unix_timestamp(self.base_table.timestamp).op('DIV')(period)), self.base_table.probe_number) \
-                     .filter(self.base_table.timestamp > last)
-        session.execute(insert(agg_table).from_select(['timestamp', 'probe_number'] + pvt_field_names, qry))
-
     def update(self, session, last_data_time):
-        for agglevel, aggtable in zip(self.aggs, self.atables):
-            self.add(session, agglevel, aggtable, last_data_time, self.pvt, self.pvt_fields)
+        for period, agg_table in zip(self.aggs, self.atables):
+            last = session.query(func.max(agg_table.c.timestamp)).scalar()
+            if not last:
+                last = session.query(func.min(self.base_table.timestamp).label('timestamp')).scalar()
+            if (last_data_time - last).total_seconds() < period:
+                print "Not data for tailed agg at", period, \
+                      "last", last, \
+                      "last_data_time", last_data_time, \
+                      "seconds", (last_data_time - last).total_seconds(), \
+                      "days", (last_data_time - last).days
+                return
+            last += datetime.timedelta(seconds=period)
+            funs = list()
+            insp = inspect(self.base_table)
+            for field, pvt_funs in self.pvt.items():
+                funs.extend([fun(insp.columns[field]) for fun in pvt_funs])
+            qry = session.query(self.base_table.timestamp, self.base_table.probe_number, *funs) \
+                         .group_by(func.round(func.unix_timestamp(self.base_table.timestamp).op('DIV')(period)), self.base_table.probe_number) \
+                         .filter(self.base_table.timestamp > last)
+            session.execute(insert(agg_table).from_select(['timestamp', 'probe_number'] + self.pvt_fields, qry))
 
     def optimal(self, probe_number, start_date, end_date):
         pass
