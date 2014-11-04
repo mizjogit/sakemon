@@ -188,7 +188,7 @@
         <tbody>
          {% for row in vals %}
                 <tr class="active-div" 
-                     timeout=2000
+                     timeout=10000
                      href="http://{{servahost}}/bmanagea/block?bid={{row.probe_number}}&okredir={{url_for('pstatus', sensor=row.probe_number, _external=True)}}">
                     <td>{{ row.probe_number }}</td>
 		    <td>{{ probe_labels[row.probe_number] }}</td>

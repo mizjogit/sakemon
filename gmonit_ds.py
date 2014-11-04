@@ -5,16 +5,7 @@ import time
 import requests
 import optparse
 import logging
-<<<<<<< HEAD
-import datetime
-=======
-import subprocess
-import re
-import RPi.GPIO as GPIO
->>>>>>> upstream/master
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(17, GPIO.OUT)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -35,12 +26,6 @@ probe = ['28-00000405860e', '28-00000405bb1e', '28-00000405c040']
 speriod = 10
 
 gevent.monkey.patch_all()
-
-#@route('/ioupdate', methods=['POST'])
-#def post():
-#    for port, value in request.form.items():
-#	logger.info("IO Update port=%s value=%s" % (port, value))
-#    return " "
 
 
 def get_ds_temp(port):
@@ -83,13 +68,9 @@ class CollectApp:
         self.sleep_interval = speriod
         self.unlock_target = 'http://localhost:8088/bmanagea/release'
         if not simulator:
-            logger.info("Initialising DHT22")	
+            import dhtreader
+            self.dhtreader = dhtreader
             self.get_ds_temp = get_ds_temp
-	    GPIO.output(17, GPIO.LOW)
-	    time.sleep(5)
-	    GPIO.output(17, GPIO.HIGH)
-	    logger.info("Complete")
-	    time.sleep(5)
         else:
             self.dhtreader = SimulateDhtReader
             self.get_ds_temp = SimulateDsTemp
@@ -103,30 +84,27 @@ class CollectApp:
         while True:
             for port in xrange(self.ports):
                 temp = self.get_ds_temp(port)
-                if temp is None:
-                  logger.info('DS18B20 Read FAIL, Break')
-                  break
+		if temp is None:
+	  	  logger.info('DS18B20 Read FAIL, Break')
+		  break		
                 logger.info('DS18B20 Probe={0} Temp={1:0.1f}'.format(port, temp))
                 #logger.info('unlocker reply %s' % requests.post(self.unlock_target, {'bid': port}))
-                dte = sakidb.DataTable(probe_number=port, temperature=temp, timestamp=datetime.datetime.now())
-                print dte
+                dte = sakidb.DataTable(probe_number=port, temperature=temp)
                 self.session.add(dte)
                 self.session.commit()
-            gevent.sleep(self.sleep_interval)    
+            gevent.sleep(self.sleep_interval)
 
     def read_dht22(self):
         while True:
-	    output = subprocess.check_output(["/home/sakemon/sakemon/Adafruit_DHT", "2302", "22" ]);
-    	    matches = re.search("Temp =\s+([0-9.]+)", output)
-    	    if (matches):
-        	   temp = float(matches.group(1))
-           	   matches = re.search("Hum =\s+([0-9.]+)", output)
-        	   humidity = float(matches.group(1))
-            	   logger.info('DHT22 Probe=3 Temp={1:0.1f} Humidity={2:0.1f}'.format(3, temp, humidity))
-           	  #logger.info('unlocker reply %s' % requests.post(self.unlock_target, {'bid': 3}))
-            	   dte = sakidb.DataTable(probe_number=3, temperature=temp, humidity=humidity)
-            	   self.session.add(dte)
-            	   self.session.commit()
+            try:
+                temp, humidity = self.dhtreader.read(22, 22)
+                logger.info('DHT22 Probe=3 Temp={1:0.1f} Humidity={2:0.1f}'.format(3, temp, humidity))
+                #logger.info('unlocker reply %s' % requests.post(self.unlock_target, {'bid': 3}))
+                dte = sakidb.DataTable(probe_number=3, temperature=temp, humidity=humidity)
+                self.session.add(dte)
+                self.session.commit()
+            except TypeError as tt:
+                logger.error("DHT22 Read Error '%s'" % str(tt))
             gevent.sleep(self.sleep_interval)
 
 if __name__ == '__main__':
@@ -134,6 +112,6 @@ if __name__ == '__main__':
     parser.add_option("-s", "--simulator", dest="simulator", action="store_true", default=None, help="Run simulator")
     options, args = parser.parse_args()
     semapp = CollectApp(cstring, options.simulator)
-    gevent.spawn(functools.partial(CollectApp.read_dht22, semapp))
-    #gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
-    WSGIServer(('0.0.0.0', 8089), functools.partial(CollectApp.application, semapp)).serve_forever()
+    #gevent.spawn(functools.partial(CollectApp.read_dht22, semapp))
+    gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
+    WSGIServer(('0.0.0.0', 8090), functools.partial(CollectApp.application, semapp)).serve_forever()
