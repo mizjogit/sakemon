@@ -7,7 +7,10 @@ import optparse
 import logging
 import subprocess
 import re
+import RPi.GPIO as GPIO
 
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(17, GPIO.OUT)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -78,6 +81,11 @@ class CollectApp:
         if not simulator:
             logger.info("Initialising DHT22")	
             self.get_ds_temp = get_ds_temp
+	    GPIO.output(17, GPIO.LOW)
+	    time.sleep(5)
+	    GPIO.output(17, GPIO.HIGH)
+	    logger.info("Complete")
+	    time.sleep(5)
         else:
             self.dhtreader = SimulateDhtReader
             self.get_ds_temp = SimulateDsTemp
@@ -91,12 +99,15 @@ class CollectApp:
         while True:
             for port in xrange(self.ports):
                 temp = self.get_ds_temp(port)
+                if temp is None:
+                  logger.info('DS18B20 Read FAIL, Break')
+                  break
                 logger.info('DS18B20 Probe={0} Temp={1:0.1f}'.format(port, temp))
                 #logger.info('unlocker reply %s' % requests.post(self.unlock_target, {'bid': port}))
                 dte = sakidb.DataTable(probe_number=port, temperature=temp)
                 self.session.add(dte)
                 self.session.commit()
-            gevent.sleep(self.sleep_interval)
+            gevent.sleep(self.sleep_interval)    
 
     def read_dht22(self):
         while True:
