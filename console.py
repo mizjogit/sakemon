@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import sys
 import json
 import time
@@ -14,7 +15,7 @@ from flask.ext.wtf import Form
 from wtforms import TextField, validators, SubmitField
 
 import sakidb
-from sakidb import DataTable
+from sakidb import DataTable, mtable
 
 sys.stdout = sys.stderr
 
@@ -132,12 +133,13 @@ def jdata(sensor='0'):
                      .order_by(DataTable.timestamp)
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
     else:
-        qry = session.query(DataTable.timestamp,
-                            func.max(DataTable.temperature).label('max'),
-                            func.min(DataTable.temperature).label('min')) \
-                     .group_by(cast(DataTable.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
-                     .filter(DataTable.probe_number == sensor, DataTable.timestamp >= start, DataTable.timestamp <= end) \
-                     .order_by(DataTable.timestamp)
+        seconds_per_sample_wanted, table = mtable.optimal(sensor, start, end)
+        qry = session.query(table.c.timestamp,
+                            func.max(table.c.temperature_max).label('max'),
+                            func.min(table.c.temperature_min).label('min')) \
+                     .group_by(func.round(func.unix_timestamp(table.c.timestamp).op('DIV')(seconds_per_sample_wanted))) \
+                     .filter(table.c.probe_number == sensor, table.c.timestamp >= start, table.c.timestamp <= end) \
+                     .order_by(table.c.timestamp)
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
 
@@ -163,14 +165,23 @@ def pstatus(sensor='0'):
     return response
 
 
-@app.route('/jsond/<sensor>')
+@app.route('/jsond/<sensor>')       # sensors, '0' '1', '2', '3', 'nav', 'h3'
 def jsond(sensor='0'):
     # qry = session.query(Data).filter(Data.probe_number == sensor)
+
+    start, end = session.query(func.min(DataTable.timestamp), func.max(DataTable.timestamp)).first()
     if sensor == 'nav':
-        qry = session.query(DataTable.timestamp, func.max(DataTable.temperature).label('max')) \
-                     .group_by(cast(DataTable.timestamp / 3600, Numeric(20, 0))) \
-                     .order_by(DataTable.timestamp)
-        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.max) for ii in qry])
+        seconds_per_sample_wanted, table = mtable.optimal(sensor, start, end)
+
+        qry = session.query(table.c.timestamp, table.c.probe_number,  func.max(table.c.temperature_avg).label('max')) \
+                     .group_by(func.round(func.unix_timestamp(table.c.timestamp).op('DIV')(seconds_per_sample_wanted))) \
+                     .order_by(table.c.timestamp)
+        res = qry.all()
+        print "len", len(res)
+        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.max) for ii in res])
+
+
+
     elif sensor[0] == 'h':
         start, end = session.query(func.max(DataTable.timestamp), func.min(DataTable.timestamp)).first()
         seconds = (end - start).total_seconds()
@@ -182,16 +193,14 @@ def jsond(sensor='0'):
                      .order_by(DataTable.timestamp)
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
     else:
-        start, end = session.query(func.max(DataTable.timestamp), func.min(DataTable.timestamp)).first()
-        seconds = (end - start).total_seconds()
-        seconds_per_sample_wanted = seconds / target
-        qry = session.query(DataTable.timestamp,
-                            func.avg(DataTable.temperature).label('avg'),
-                            func.max(DataTable.temperature).label('max'),
-                            func.min(DataTable.temperature).label('min')) \
-                     .group_by(cast(DataTable.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
-                     .filter(DataTable.probe_number == sensor) \
-                     .order_by(DataTable.timestamp)
+        seconds_per_sample_wanted, table = mtable.optimal(sensor, start, end)
+
+        qry = session.query(table.c.timestamp,
+                            func.max(table.c.temperature_max).label('max'),
+                            func.min(table.c.temperature_min).label('min')) \
+                     .group_by(func.round(func.unix_timestamp(table.c.timestamp).op('DIV')(seconds_per_sample_wanted))) \
+                     .filter(table.c.probe_number == sensor) \
+                     .order_by(table.c.timestamp)
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
 app.secret_key = "\xcd\x1f\xc6O\x04\x18\x0eFN\xf9\x0c,\xfb4{''<\x9b\xfc\x08\x87\xe9\x13"

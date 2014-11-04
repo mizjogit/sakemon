@@ -52,7 +52,20 @@ class ManagedTable:
             session.execute(insert(agg_table).from_select(['timestamp', 'probe_number'] + self.pvt_fields, qry))
 
     def optimal(self, probe_number, start_date, end_date):
+        target = 300
+
         seconds = (end_date - start_date).total_seconds()
+        seconds_per_sample_wanted = seconds / target
+        for pos, ii in enumerate(self.aggs):
+            if seconds_per_sample_wanted < ii:
+                break
+        pos -= 1
+        if pos < 0:
+            print "should use primary .."
+            return seconds_per_sample_wanted, self.base_table
+
+        print "returning", self.agg_map[self.aggs[pos]]
+        return seconds_per_sample_wanted, self.agg_map[self.aggs[pos]]       
 
 
 class DataTable(dbase):
