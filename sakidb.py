@@ -1,11 +1,11 @@
 import optparse
+import datetime
+import time
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import types, Column, Table, inspect, Index
-from sqlalchemy import insert
-import datetime
-import time
+from sqlalchemy import func, insert
 
 dbase = declarative_base()
 
@@ -15,8 +15,8 @@ class ManagedTable:
         self.base_table = base_table
         self.aggs = aggs
         self.pvt = pvt
-        self.atables = list()
-        for ii, agglevel in enumerate(aggs):
+        self.agg_map = dict()
+        for agglevel in aggs:
             cols = list()
             self.pvt_fields = list()
             for col in inspect(self.base_table).columns:
@@ -27,10 +27,10 @@ class ManagedTable:
                     fname = '%s_%s' % (col_name, str(fun()).replace('()', ''))
                     self.pvt_fields.append(fname)
                     cols.append(Column(fname, types.Float))
-            self.atables.append(Table('data%d' % agglevel, dbase.metadata, *map(lambda c: c.copy(), cols)))
+            self.agg_map[agglevel] = Table('data%d' % agglevel, dbase.metadata, *map(lambda c: c.copy(), cols))
 
     def update(self, session, last_data_time):
-        for period, agg_table in zip(self.aggs, self.atables):
+        for period, agg_table in self.agg_map.iteritems():
             last = session.query(func.max(agg_table.c.timestamp)).scalar()
             if not last:
                 last = session.query(func.min(self.base_table.timestamp).label('timestamp')).scalar()
@@ -40,11 +40,11 @@ class ManagedTable:
                       "last_data_time", last_data_time, \
                       "seconds", (last_data_time - last).total_seconds(), \
                       "days", (last_data_time - last).days
-                return
+                continue
             last += datetime.timedelta(seconds=period)
             funs = list()
             insp = inspect(self.base_table)
-            for field, pvt_funs in self.pvt.items():
+            for field, pvt_funs in self.pvt.iteritems():
                 funs.extend([fun(insp.columns[field]) for fun in pvt_funs])
             qry = session.query(self.base_table.timestamp, self.base_table.probe_number, *funs) \
                          .group_by(func.round(func.unix_timestamp(self.base_table.timestamp).op('DIV')(period)), self.base_table.probe_number) \
@@ -52,7 +52,7 @@ class ManagedTable:
             session.execute(insert(agg_table).from_select(['timestamp', 'probe_number'] + self.pvt_fields, qry))
 
     def optimal(self, probe_number, start_date, end_date):
-        pass
+        seconds = (end_date - start_date).total_seconds()
 
 
 class DataTable(dbase):
@@ -91,9 +91,13 @@ class config(dbase):
         return "%s,%s,%s,%s" % (self.target, self.attribute, self.op, self.value)
 
 
+pvt = {'temperature': [func.min, func.max, func.avg],
+       'humidity': [func.avg]}
+mtable = ManagedTable(aggs=[60, 600, 3600, 86400], base_table=DataTable, pvt=pvt)
+# start,end = session.query(func.min(mtable.agg_map[60].c.timestamp), func.max(mtable.agg_map[60].c.timestamp)).first(
+
 if __name__ == '__main__':
     from engineconfig import cstring
-    from sqlalchemy import func
     from sqlalchemy import create_engine
 
     parser = optparse.OptionParser()
@@ -104,9 +108,6 @@ if __name__ == '__main__':
     options, args = parser.parse_args()
 
     engine = create_engine(cstring, pool_recycle=3600)
-    pvt = {'temperature': [func.min, func.max, func.avg],
-           'humidity': [func.avg]}
-    mtable = ManagedTable(aggs=[60, 600, 3600, 86400], base_table=DataTable, pvt=pvt)
 
     if options.create:
         dbase.metadata.create_all(engine)
