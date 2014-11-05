@@ -123,30 +123,6 @@ encoder.FLOAT_REPR = lambda o: format(o, '.2f')
 target = 100
 
 
-@app.route('/jdata/<sensor>')
-@support_jsonp
-def jdata(sensor='0'):
-    start = datetime.datetime.fromtimestamp(float(request.args.get('start')) / 1000.0)
-    end = datetime.datetime.fromtimestamp(float(request.args.get('end')) / 1000.0)
-
-    seconds = (end - start).total_seconds()
-    seconds_per_sample_wanted = seconds / target
-    if sensor[0] == 'h':
-        qry = session.query(DataTable.timestamp,
-                            func.avg(DataTable.humidity).label('avg')) \
-                     .group_by(cast(DataTable.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
-                     .filter(DataTable.probe_number == sensor[1], DataTable.timestamp >= start, DataTable.timestamp <= end) \
-                     .order_by(DataTable.timestamp)
-        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
-    else:
-        seconds_per_sample_wanted, table = mtable.optimal(sensor, start, end)
-        qry = session.query(table.c.timestamp,
-                            func.max(table.c.temperature_max).label('max'),
-                            func.min(table.c.temperature_min).label('min')) \
-                     .group_by(func.round(func.unix_timestamp(table.c.timestamp).op('DIV')(seconds_per_sample_wanted))) \
-                     .filter(table.c.probe_number == sensor, table.c.timestamp >= start, table.c.timestamp <= end) \
-                     .order_by(table.c.timestamp)
-        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
 
 @app.route('/gauge/<sensor>')
@@ -171,42 +147,43 @@ def pstatus(sensor='0'):
     return response
 
 
+def sensord(sensor, start, end, field_name, functions):
+    seconds_per_sample_wanted, table = mtable.optimal(sensor, start, end)
+    fields = list()
+    for agg_func in functions:
+        agg_func_name = str(agg_func()).replace('()', '')
+        fields.append(agg_func(table.c['%s_%s' % (field_name, agg_func_name)]).label(agg_func_name))
+    qry = session.query(table.c.timestamp, *fields) \
+                 .group_by(func.round(func.unix_timestamp(table.c.timestamp).op('DIV')(seconds_per_sample_wanted))) \
+                 .filter(table.c.probe_number == sensor, table.c.timestamp >= start, table.c.timestamp <= end) \
+                 .order_by(table.c.timestamp)
+    return qry
+
+@app.route('/jdata/<sensor>')
+@support_jsonp
+def jdata(sensor='0'):
+    start = datetime.datetime.fromtimestamp(float(request.args.get('start')) / 1000.0)
+    end = datetime.datetime.fromtimestamp(float(request.args.get('end')) / 1000.0)
+    if sensor[0] == 'h':
+        qry = sensord(sensor, start, end, 'humidity', [func.avg])
+        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
+    else:
+        qry = sensord(sensor, start, end, 'temperature', [func.max, func.min])
+        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
+
 @app.route('/jsond/<sensor>')       # sensors, '0' '1', '2', '3', 'nav', 'h3'
 def jsond(sensor='0'):
     # qry = session.query(Data).filter(Data.probe_number == sensor)
 
     start, end = session.query(func.min(DataTable.timestamp), func.max(DataTable.timestamp)).first()
     if sensor == 'nav':
-        seconds_per_sample_wanted, table = mtable.optimal(sensor, start, end)
-
-        qry = session.query(table.c.timestamp, table.c.probe_number,  func.max(table.c.temperature_avg).label('max')) \
-                     .group_by(func.round(func.unix_timestamp(table.c.timestamp).op('DIV')(seconds_per_sample_wanted))) \
-                     .order_by(table.c.timestamp)
-        res = qry.all()
-        print "len", len(res)
-        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.max) for ii in res])
-
-
-
+        qry = sensord(sensor, start, end, 'temperature', [func.avg])
+        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
     elif sensor[0] == 'h':
-        start, end = session.query(func.max(DataTable.timestamp), func.min(DataTable.timestamp)).first()
-        seconds = (end - start).total_seconds()
-        seconds_per_sample_wanted = seconds / target
-        qry = session.query(DataTable.timestamp,
-                            func.avg(DataTable.humidity).label('avg')) \
-                     .group_by(cast(DataTable.timestamp / seconds_per_sample_wanted, Numeric(20, 0))) \
-                     .filter(DataTable.probe_number == sensor[1]) \
-                     .order_by(DataTable.timestamp)
+        qry = sensord(sensor, start, end, 'humidity', [func.avg])
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
     else:
-        seconds_per_sample_wanted, table = mtable.optimal(sensor, start, end)
-
-        qry = session.query(table.c.timestamp,
-                            func.max(table.c.temperature_max).label('max'),
-                            func.min(table.c.temperature_min).label('min')) \
-                     .group_by(func.round(func.unix_timestamp(table.c.timestamp).op('DIV')(seconds_per_sample_wanted))) \
-                     .filter(table.c.probe_number == sensor) \
-                     .order_by(table.c.timestamp)
+        qry = sensord(sensor, start, end, 'temperature', [func.max, func.min])
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
 
 app.secret_key = "\xcd\x1f\xc6O\x04\x18\x0eFN\xf9\x0c,\xfb4{''<\x9b\xfc\x08\x87\xe9\x13"
