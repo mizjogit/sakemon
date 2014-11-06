@@ -61,8 +61,7 @@ class ManagedTable:
                 break
         pos -= 1
         if pos < 0:
-            print "should use primary .."
-            return seconds_per_sample_wanted, self.base_table
+            return seconds_per_sample_wanted, inspect(self.base_table).mapped_table
 
         print "returning", self.agg_map[self.aggs[pos]]
         return seconds_per_sample_wanted, self.agg_map[self.aggs[pos]]       
