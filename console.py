@@ -148,11 +148,12 @@ def pstatus(sensor='0'):
 
 
 def sensord(sensor, start, end, field_name, functions):
-    seconds_per_sample_wanted, table = mtable.optimal(sensor, start, end)
+    seconds_per_sample_wanted, table, is_base_table = mtable.optimal(sensor, start, end)
     fields = list()
     for agg_func in functions:
         agg_func_name = str(agg_func()).replace('()', '')
-        fields.append(agg_func(table.c['%s_%s' % (field_name, agg_func_name)]).label(agg_func_name))
+        agg_field_name = field_name if is_base_table else '%s_%s' % (field_name, agg_func_name)
+        fields.append(agg_func(table.c[agg_field_name]).label(agg_func_name))
     qry = session.query(table.c.timestamp, *fields) \
                  .group_by(func.round(func.unix_timestamp(table.c.timestamp).op('DIV')(seconds_per_sample_wanted))) \
                  .filter(table.c.probe_number == sensor, table.c.timestamp >= start, table.c.timestamp <= end) \
