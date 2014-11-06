@@ -166,7 +166,7 @@ def jdata(sensor='0'):
     start = datetime.datetime.fromtimestamp(float(request.args.get('start')) / 1000.0)
     end = datetime.datetime.fromtimestamp(float(request.args.get('end')) / 1000.0)
     if sensor[0] == 'h':
-        qry = sensord(sensor, start, end, 'humidity', [func.avg])
+        qry = sensord(sensor[1], start, end, 'humidity', [func.avg])
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
     else:
         qry = sensord(sensor, start, end, 'temperature', [func.max, func.min])
@@ -181,7 +181,7 @@ def jsond(sensor='0'):
         qry = sensord(sensor, start, end, 'temperature', [func.avg])
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
     elif sensor[0] == 'h':
-        qry = sensord(sensor, start, end, 'humidity', [func.avg])
+        qry = sensord(sensor[1], start, end, 'humidity', [func.avg])
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
     else:
         qry = sensord(sensor, start, end, 'temperature', [func.max, func.min])
