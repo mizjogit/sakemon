@@ -5,13 +5,10 @@ import time
 import requests
 import optparse
 import logging
-<<<<<<< HEAD
 import datetime
-=======
 import subprocess
 import re
 import RPi.GPIO as GPIO
->>>>>>> upstream/master
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(17, GPIO.OUT)
@@ -135,5 +132,5 @@ if __name__ == '__main__':
     options, args = parser.parse_args()
     semapp = CollectApp(cstring, options.simulator)
     gevent.spawn(functools.partial(CollectApp.read_dht22, semapp))
-    #gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
+    gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
     WSGIServer(('0.0.0.0', 8089), functools.partial(CollectApp.application, semapp)).serve_forever()
