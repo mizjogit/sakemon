@@ -67,6 +67,14 @@ class ManagedTable:
         print "returning", self.agg_map[self.aggs[pos]]
         return seconds_per_sample_wanted, self.agg_map[self.aggs[pos]], False
 
+    def check_agg(self, session):
+        last_data_time = session.query(func.max(DataTable.timestamp).label('timestamp')).scalar()
+        if not last_data_time:
+            print "no last, probably no data"
+            return
+        self.update(session, last_data_time)
+        session.commit()
+
 
 class DataTable(dbase):
     __tablename__ = 'data'
