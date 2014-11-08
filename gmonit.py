@@ -109,7 +109,7 @@ class CollectApp:
                 logger.info('DS18B20 Probe={0} Temp={1:0.1f}'.format(port, temp))
                 #logger.info('unlocker reply %s' % requests.post(self.unlock_target, {'bid': port}))
                 dte = sakidb.DataTable(probe_number=port, temperature=temp, timestamp=datetime.datetime.now())
-                print dte
+                #print dte
                 self.session.add(dte)
                 self.session.commit()
             gevent.sleep(self.sleep_interval)    
@@ -124,7 +124,7 @@ class CollectApp:
         	   humidity = float(matches.group(1))
             	   logger.info('DHT22 Probe=3 Temp={1:0.1f} Humidity={2:0.1f}'.format(3, temp, humidity))
            	  #logger.info('unlocker reply %s' % requests.post(self.unlock_target, {'bid': 3}))
-            	   dte = sakidb.DataTable(probe_number=3, temperature=temp, humidity=humidity)
+            	   dte = sakidb.DataTable(probe_number=3, temperature=temp, humidity=humidity, timestamp=datetime.datetime.now())
             	   self.session.add(dte)
             	   self.session.commit()
             gevent.sleep(self.sleep_interval)
@@ -150,9 +150,8 @@ if __name__ == '__main__':
     semapp = CollectApp(cstring, options.simulator)
     if options.simulator:
         gevent.spawn(functools.partial(CollectApp.weather, semapp), options.weather)
-        pass
     else:
         gevent.spawn(functools.partial(CollectApp.read_dht22, semapp))
-    #gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
+        gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
     gevent.spawn(functools.partial(CollectApp.aggregator, semapp))
     WSGIServer(('0.0.0.0', 8089), functools.partial(CollectApp.application, semapp)).serve_forever()
