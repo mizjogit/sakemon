@@ -81,11 +81,21 @@ def sensorconfig():
             flash(form.errors)
     return render_template('sensorconfig.html', form=form, vals=session.query(sakidb.sensors).order_by(sakidb.sensors.number))
 
-@app.route('/sensordelete/', methods=['POST'])
+@app.route('/sensordelete', methods=['POST'])
 def sensordelete():
     res = session.query(sakidb.sensors).filter_by(number=request.form['pk']).delete()
     session.commit()
     return jsonify(result='OK', message="deleted %d" % res)
+
+@app.route('/sensordtoggle', methods=['POST'])
+def sensordtoggle():
+    new_state = True if request.form['current'] == 'Hidden' else False
+    print  "new state is ", new_state
+    session.query(sakidb.sensors.display).filter_by(number=request.form['pk']).update({'display': new_state})
+    res = session.query(sakidb.sensors.display).filter_by(number=request.form['pk']).scalar()
+    print res
+    session.commit()
+    return jsonify(result='OK', display='Displayed' if res == True else 'Hidden')
 
 
 class AlertForm(Form):

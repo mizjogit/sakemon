@@ -21,10 +21,8 @@
                     <tr>
                       <td>{{ row.number }}</td>
                       <td>{{ row.name }}</td>
-                      <td>{{ 'Displayed' if row.display else '' }}</td>
-                      <td>
-                       <button data-pk={{row.number}} class="btn btn-sm confirm-delete" role="button">Delete</button>
-                       <td>
+                      <td> <a data-pk={{row.number}} class="btn btn-sm toggle-display" role="button">{{ 'Displayed' if row.display else 'Hidden' }}</a> <td>
+                      <td> <button data-pk={{row.number}} class="btn btn-sm confirm-delete" role="button">Delete</button> <td>
                     <tr>
                  {% endfor %}
                 <tbody>
@@ -40,6 +38,14 @@
      {{ super() }}
     <script src="{{url_for('static', filename='js/confirm_delete.js')}}"></script>
     <script>
+     $(document).on('click', '.toggle-display', function (event) {
+         args = {pk: $(this).data('pk'), current: $(this).html()};
+         me = $(this)
+         $.post('{{url_for('sensordtoggle')}}', args, function(data) {
+             console.log("from " + data.display);
+             me.html(data.display);
+           });
+     });
      $(document).on('click', '.confirm-delete', function (event) {
          confirmDelete(this,
              '{{url_for('sensordelete')}}',
@@ -53,7 +59,6 @@
              }
          )
         });
-
 
     </script>
 {%- endblock %}
