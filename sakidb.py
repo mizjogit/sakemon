@@ -67,6 +67,14 @@ class ManagedTable:
         print "returning", self.agg_map[self.aggs[pos]]
         return seconds_per_sample_wanted, self.agg_map[self.aggs[pos]], False
 
+    def check_agg(self, session):
+        last_data_time = session.query(func.max(DataTable.timestamp).label('timestamp')).scalar()
+        if not last_data_time:
+            print "no last, probably no data"
+            return
+        self.update(session, last_data_time)
+        session.commit()
+
 
 class DataTable(dbase):
     __tablename__ = 'data'
@@ -86,6 +94,10 @@ class DataTable(dbase):
 
 Index(u'data_timestamp_idx', DataTable.timestamp, unique=False)
 
+class sensors(dbase):
+    __tablename__ = 'sensors'
+    number = Column(types.Integer, primary_key=True, nullable=False)
+    name = Column(types.String(length=128), unique=True)
 
 class config(dbase):
     __tablename__ = 'config'

@@ -6,12 +6,11 @@ import requests
 import optparse
 import logging
 import datetime
+
 import subprocess
 import re
-import RPi.GPIO as GPIO
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(17, GPIO.OUT)
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -22,13 +21,13 @@ from engineconfig import cstring
 
 import sakidb
 
+import weather
 
 logger = logging.getLogger('templogger')
 logging.basicConfig()
 logger.setLevel(logging.DEBUG)
 
 
-probe = ['28-00000405860e', '28-00000405bb1e', '28-00000405c040']
 speriod = 10
 
 gevent.monkey.patch_all()
@@ -41,6 +40,7 @@ gevent.monkey.patch_all()
 
 
 def get_ds_temp(port):
+    probe = ['28-00000405860e', '28-00000405bb1e', '28-00000405c040']
     devicefile = '/sys/bus/w1/devices/' + probe[port] + '/w1_slave'
     try:
         with open(devicefile, 'r') as fileobj:
@@ -82,11 +82,14 @@ class CollectApp:
         if not simulator:
             logger.info("Initialising DHT22")	
             self.get_ds_temp = get_ds_temp
-	    GPIO.output(17, GPIO.LOW)
-	    time.sleep(5)
-	    GPIO.output(17, GPIO.HIGH)
-	    logger.info("Complete")
-	    time.sleep(5)
+            import RPi.GPIO as GPIO
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(17, GPIO.OUT)
+            GPIO.output(17, GPIO.LOW)
+            time.sleep(5)
+            GPIO.output(17, GPIO.HIGH)
+            logger.info("Complete")
+            time.sleep(5)
         else:
             self.dhtreader = SimulateDhtReader
             self.get_ds_temp = SimulateDsTemp
@@ -126,11 +129,29 @@ class CollectApp:
             	   self.session.commit()
             gevent.sleep(self.sleep_interval)
 
+
+    def weather(self, station):
+        while True:
+            stations = weather.get()
+            print stations[station]
+            gevent.sleep(500)
+
+    def aggregator(self):
+        while True:
+            print "Aggregator"
+            sakidb.mtable.check_agg(self.session)
+            gevent.sleep(60)
+
 if __name__ == '__main__':
     parser = optparse.OptionParser()
     parser.add_option("-s", "--simulator", dest="simulator", action="store_true", default=None, help="Run simulator")
+    parser.add_option("-w", "--weather", dest="weather", default=None, help="Get basline weather")
     options, args = parser.parse_args()
     semapp = CollectApp(cstring, options.simulator)
-    gevent.spawn(functools.partial(CollectApp.read_dht22, semapp))
-    gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
+    if options.simulator:
+        gevent.spawn(functools.partial(CollectApp.weather, semapp), options.weather)
+    else:
+        gevent.spawn(functools.partial(CollectApp.read_dht22, semapp))
+        gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
+    gevent.spawn(functools.partial(CollectApp.aggregator, semapp))
     WSGIServer(('0.0.0.0', 8089), functools.partial(CollectApp.application, semapp)).serve_forever()
