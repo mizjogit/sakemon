@@ -1,0 +1,57 @@
+{% extends "wkbase.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% set active_page = '/sensorconfig' %}
+{% block body_with_flasher %}
+<div class="container-fluid">
+        <div class="page-header">
+            <h3>Sensor Config</h3>
+        </div>
+        <div class="row-fluid">
+            <table class="table">
+                <thead>
+                  <tr>
+                      <th>Number</th>
+                      <th>Name</th>
+                      <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                 {% for row in vals %}
+                    <tr>
+                      <td>{{ row.number }}</td>
+                      <td>{{ row.name }}</td>
+                      <td>
+                       <button data-pk={{row.number}} class="btn btn-sm confirm-delete" role="button">Delete</button>
+                       <td>
+                    <tr>
+                 {% endfor %}
+                <tbody>
+            </table>
+        </div>
+        <div class="row-fluid">
+         {{ wtf.quick_form(form, action=url_for('sensorconfig'),  button_map={'submit_button': 'primary'}) }}
+        </div>
+</div>
+{% endblock %}
+
+{%- block scripts %}
+     {{ super() }}
+    <script src="{{url_for('static', filename='js/confirm_delete.js')}}"></script>
+    <script>
+     $(document).on('click', '.confirm-delete', function (event) {
+         confirmDelete(this,
+             '{{url_for('sensordelete')}}',
+             {
+               'pk': $(this).data('pk'),
+               'action': 'delete',
+               csrf_token: '{{form.csrf_token.current_token}}'
+             },
+             function (server_reply) {
+                  window.location.href = window.location.href;
+             }
+         )
+        });
+
+
+    </script>
+{%- endblock %}

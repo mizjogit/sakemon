@@ -94,6 +94,10 @@ class DataTable(dbase):
 
 Index(u'data_timestamp_idx', DataTable.timestamp, unique=False)
 
+class sensors(dbase):
+    __tablename__ = 'sensors'
+    number = Column(types.Integer, primary_key=True, nullable=False)
+    name = Column(types.String(length=128), unique=True)
 
 class config(dbase):
     __tablename__ = 'config'

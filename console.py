@@ -4,11 +4,12 @@ import json
 import time
 import datetime
 
-from flask import Flask, make_response, jsonify, render_template, request
+from flask import Flask, make_response, jsonify, render_template, request, flash
 
 from sqlalchemy import create_engine, func, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import cast, Numeric
+from sqlalchemy.exc import IntegrityError
 from flask.ext.bootstrap import Bootstrap
 
 from flask.ext.wtf import Form
@@ -21,12 +22,12 @@ sys.stdout = sys.stderr
 
 app = Flask(__name__)
 Bootstrap(app)
-CSRF_ENABLED = False
+# CSRF_ENABLED = False
 app.debug = True
 
 from engineconfig import cstring, servahost
 engine = create_engine(cstring, pool_recycle=3600)
-Session = sessionmaker(bind=engine, autocommit=True)
+Session = sessionmaker(bind=engine) #  autocommit=True)
 session = Session()
 
 probe_labels = ['Fermenter Internal', 'Fermenter External', 'Koji Chamber', 'Humidity Probe']
@@ -57,6 +58,31 @@ def post():
 def report():
     vals = session.query(DataTable).order_by(DataTable.timestamp.desc()).limit(12)
     return render_template('report.html', vals=vals)
+
+class SensorNameForm(Form):
+    name = TextField('Name', [validators.Required()])
+    submit_button = SubmitField('Add')
+
+
+@app.route('/sensorconfig/', methods=['POST', 'GET'])
+def sensorconfig():
+    form = SensorNameForm()
+    if request.method == 'POST':
+        if form.validate():
+            try:
+                nss = sakidb.sensors(name=form.name.data)
+                session.merge(nss)
+                session.commit()
+            except IntegrityError as ee:
+                flash(ee.message)
+                session.rollback()
+    return render_template('sensorconfig.html', form=form, vals=session.query(sakidb.sensors).order_by(sakidb.sensors.number))
+
+@app.route('/sensordelete/', methods=['POST'])
+def sensordelete():
+    res = session.query(sakidb.sensors).filter_by(number=request.form['pk']).delete()
+    session.commit()
+    return jsonify(result='OK', message="deleted %d" % res)
 
 
 class AlertForm(Form):
