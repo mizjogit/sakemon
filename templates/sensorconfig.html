@@ -12,6 +12,7 @@
                   <tr>
                       <th>Number</th>
                       <th>Name</th>
+                      <th>Displayed</th>
                       <th></th>
                   </tr>
                 </thead>
@@ -20,6 +21,7 @@
                     <tr>
                       <td>{{ row.number }}</td>
                       <td>{{ row.name }}</td>
+                      <td>{{ 'Displayed' if row.display else '' }}</td>
                       <td>
                        <button data-pk={{row.number}} class="btn btn-sm confirm-delete" role="button">Delete</button>
                        <td>
