@@ -98,6 +98,8 @@ class sensors(dbase):
     __tablename__ = 'sensors'
     number = Column(types.Integer, primary_key=True, nullable=False)
     name = Column(types.String(length=128), unique=True)
+    display = Column(types.Boolean)     #  alter table sensors add column display bool; update sensors set display = True;
+
 
 class config(dbase):
     __tablename__ = 'config'
@@ -105,12 +107,6 @@ class config(dbase):
     attribute = Column(types.String(length=64), primary_key=True)
     op = Column(types.String(length=1))
     value = Column(types.String(length=10))
-
-    def __init__(self, target, attribute, op, value):
-        self.target = target
-        self.attribute = attribute
-        self.op = op
-        self.value = value
 
     def __repr__(self):
         return "%s,%s,%s,%s" % (self.target, self.attribute, self.op, self.value)

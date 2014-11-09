@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from flask.ext.bootstrap import Bootstrap
 
 from flask.ext.wtf import Form
-from wtforms import TextField, validators, SubmitField
+from wtforms import TextField, validators, SubmitField, BooleanField
 
 import sakidb
 from sakidb import DataTable, mtable
@@ -61,6 +61,7 @@ def report():
 
 class SensorNameForm(Form):
     name = TextField('Name', [validators.Required()])
+    display = BooleanField('Displayed', default=True)
     submit_button = SubmitField('Add')
 
 
@@ -70,19 +71,31 @@ def sensorconfig():
     if request.method == 'POST':
         if form.validate():
             try:
-                nss = sakidb.sensors(name=form.name.data)
+                nss = sakidb.sensors(name=form.name.data, display=form.display.data)
                 session.merge(nss)
                 session.commit()
             except IntegrityError as ee:
                 flash(ee.message)
                 session.rollback()
+        else:
+            flash(form.errors)
     return render_template('sensorconfig.html', form=form, vals=session.query(sakidb.sensors).order_by(sakidb.sensors.number))
 
-@app.route('/sensordelete/', methods=['POST'])
+@app.route('/sensordelete', methods=['POST'])
 def sensordelete():
     res = session.query(sakidb.sensors).filter_by(number=request.form['pk']).delete()
     session.commit()
     return jsonify(result='OK', message="deleted %d" % res)
+
+@app.route('/sensordtoggle', methods=['POST'])
+def sensordtoggle():
+    new_state = True if request.form['current'] == 'Hidden' else False
+    print  "new state is ", new_state
+    session.query(sakidb.sensors.display).filter_by(number=request.form['pk']).update({'display': new_state})
+    res = session.query(sakidb.sensors.display).filter_by(number=request.form['pk']).scalar()
+    print res
+    session.commit()
+    return jsonify(result='OK', display='Displayed' if res == True else 'Hidden')
 
 
 class AlertForm(Form):
