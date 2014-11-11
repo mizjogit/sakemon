@@ -28,7 +28,7 @@ engine = create_engine(cstring, pool_recycle=3600)
 Session = sessionmaker(bind=engine)  # autocommit=True)
 session = Session()
 
-probe_labels = ['Fermenter Internal', 'Fermenter External', 'Koji Chamber', 'Humidity Probe']
+probe_labels = ['Fermenter Internal', 'Fermenter External', 'Koji Chamber', 'RH Probe']
 
 
 @app.route('/status')
@@ -166,11 +166,19 @@ target = 100
 
 @app.route('/gauge/<sensor>')
 def gstatus(sensor='0'):
-    max_time = session.query(func.max(DataTable.timestamp)).filter(DataTable.probe_number == sensor).subquery()
-    row = session.query(DataTable.probe_number, DataTable.temperature, DataTable.humidity, DataTable.timestamp) \
+
+    if sensor[0] == 'h':
+    	max_time = session.query(func.max(DataTable.timestamp)).filter(DataTable.probe_number == sensor[1]).subquery()
+    	row = session.query(DataTable.probe_number, DataTable.temperature, DataTable.humidity, DataTable.timestamp) \
+                 .filter(DataTable.timestamp == max_time, DataTable.probe_number == sensor[1]) \
+                 .first()
+	response = make_response(render_template('status_gauge_h.html', row=row, probe_labels=probe_labels))
+    else:
+        max_time = session.query(func.max(DataTable.timestamp)).filter(DataTable.probe_number == sensor).subquery()
+        row = session.query(DataTable.probe_number, DataTable.temperature, DataTable.humidity, DataTable.timestamp) \
                  .filter(DataTable.timestamp == max_time, DataTable.probe_number == sensor) \
                  .first()
-    response = make_response(render_template('status_gauge.html', row=row, probe_labels=probe_labels))
+    	response = make_response(render_template('status_gauge.html', row=row, probe_labels=probe_labels))
     response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
