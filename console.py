@@ -14,7 +14,7 @@ from flask.ext.wtf import Form
 from wtforms import TextField, validators, SubmitField, BooleanField
 
 import sakidb
-from sakidb import DataTable, mtable
+from sakidb import DataTable, mtable, Sensors
 
 sys.stdout = sys.stderr
 
@@ -36,12 +36,11 @@ def status():
     #     select data.probe_number,temperature,timestamp from data
     #       join (select probe_number, max(timestamp) as ts from data group by probe_number)
     #      as xx where xx.ts = timestamp and xx.probe_number = data.probe_number;
-    max_times = session.query(DataTable.probe_number, func.max(DataTable.timestamp).label('timestamp')).group_by(DataTable.probe_number).subquery()
-    vals = session.query(DataTable.probe_number,
-                         DataTable.temperature,
-                         DataTable.humidity,
-                         DataTable.timestamp) \
+    max_times = session.query(DataTable.probe_number, func.max(DataTable.timestamp).label('timestamp')) \
+                       .group_by(DataTable.probe_number).subquery()
+    vals = session.query(DataTable, Sensors) \
                   .join(max_times, and_(max_times.c.timestamp == DataTable.timestamp, max_times.c.probe_number == DataTable.probe_number)) \
+                  .join(Sensors, Sensors.number == DataTable.probe_number) \
                   .order_by(DataTable.probe_number)
     response = make_response(render_template('status.html', vals=vals, servahost=servahost, probe_labels=probe_labels))
     return response
@@ -74,7 +73,7 @@ def sensorconfig():
     if request.method == 'POST':
         if form.validate():
             try:
-                nss = sakidb.sensors(name=form.name.data, short_name=form.short_name.data, display=form.display.data)
+                nss = sakidb.Sensors(name=form.name.data, short_name=form.short_name.data, display=form.display.data)
                 session.merge(nss)
                 session.commit()
             except IntegrityError as ee:
@@ -82,12 +81,12 @@ def sensorconfig():
                 session.rollback()
         else:
             flash(form.errors)
-    return render_template('sensorconfig.html', form=form, vals=session.query(sakidb.sensors).order_by(sakidb.sensors.number))
+    return render_template('sensorconfig.html', form=form, vals=session.query(sakidb.Sensors).order_by(sakidb.Sensors.number))
 
 
 @app.route('/sensordelete', methods=['POST'])
 def sensordelete():
-    res = session.query(sakidb.sensors).filter_by(number=request.form['pk']).delete()
+    res = session.query(sakidb.Sensors).filter_by(number=request.form['pk']).delete()
     session.commit()
     return jsonify(result='OK', message="deleted %d" % res)
 
@@ -95,8 +94,8 @@ def sensordelete():
 @app.route('/sensordtoggle', methods=['POST'])
 def sensordtoggle():
     new_state = True if request.form['current'] == 'Hidden' else False
-    session.query(sakidb.sensors.display).filter_by(number=request.form['pk']).update({'display': new_state})
-    res = session.query(sakidb.sensors.display).filter_by(number=request.form['pk']).scalar()
+    session.query(sakidb.Sensors.display).filter_by(number=request.form['pk']).update({'display': new_state})
+    res = session.query(sakidb.Sensors.display).filter_by(number=request.form['pk']).scalar()
     session.commit()
     return jsonify(result='OK', display='Displayed' if res else 'Hidden')
 
