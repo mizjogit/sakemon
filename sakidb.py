@@ -98,6 +98,7 @@ class sensors(dbase):
     __tablename__ = 'sensors'
     number = Column(types.Integer, primary_key=True, nullable=False)
     name = Column(types.String(length=128), unique=True)
+    short_name = Column(types.String(length=20), unique=True, nullable=False)
     display = Column(types.Boolean)     #  alter table sensors add column display bool; update sensors set display = True;
 
 
