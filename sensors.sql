@@ -26,8 +26,11 @@ DROP TABLE IF EXISTS `sensors`;
 CREATE TABLE `sensors` (
   `number` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(128) DEFAULT NULL,
+  `short_name` varchar(20) NOT NULL,
+  `display` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`number`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`name`),
+  UNIQUE KEY `short_name` (`short_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -37,7 +40,7 @@ CREATE TABLE `sensors` (
 
 LOCK TABLES `sensors` WRITE;
 /*!40000 ALTER TABLE `sensors` DISABLE KEYS */;
-INSERT INTO `sensors` VALUES (0,'Fermenter External'),(1,'Fermenter Internal'),(2,'Koji Chamber'),(3,'RH Probe');
+INSERT INTO `sensors` VALUES (0,'Fermenter External', 'FEXT', True),(1,'Fermenter Internal', 'FINT', True),(2,'Koji Chamber', 'KOJI', True),(3,'RH Probe', 'RH', True);
 /*!40000 ALTER TABLE `sensors` ENABLE KEYS */;
 UNLOCK TABLES;
 

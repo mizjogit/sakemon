@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import sys
-import json
 import time
 import datetime
 
@@ -8,7 +7,6 @@ from flask import Flask, make_response, jsonify, render_template, request, flash
 
 from sqlalchemy import create_engine, func, and_
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import cast, Numeric
 from sqlalchemy.exc import IntegrityError
 from flask.ext.bootstrap import Bootstrap
 
@@ -27,7 +25,7 @@ app.debug = True
 
 from engineconfig import cstring, servahost
 engine = create_engine(cstring, pool_recycle=3600)
-Session = sessionmaker(bind=engine) #  autocommit=True)
+Session = sessionmaker(bind=engine)  # autocommit=True)
 session = Session()
 
 probe_labels = ['Fermenter Internal', 'Fermenter External', 'Koji Chamber', 'RH Probe']
@@ -35,7 +33,9 @@ probe_labels = ['Fermenter Internal', 'Fermenter External', 'Koji Chamber', 'RH 
 
 @app.route('/status')
 def status():
-#     select data.probe_number,temperature,timestamp from data join (select probe_number, max(timestamp) as ts from data group by probe_number) as xx where xx.ts = timestamp and xx.probe_number = data.probe_number;
+    #     select data.probe_number,temperature,timestamp from data
+    #       join (select probe_number, max(timestamp) as ts from data group by probe_number)
+    #      as xx where xx.ts = timestamp and xx.probe_number = data.probe_number;
     max_times = session.query(DataTable.probe_number, func.max(DataTable.timestamp).label('timestamp')).group_by(DataTable.probe_number).subquery()
     vals = session.query(DataTable.probe_number,
                          DataTable.temperature,
@@ -45,6 +45,7 @@ def status():
                   .order_by(DataTable.probe_number)
     response = make_response(render_template('status.html', vals=vals, servahost=servahost, probe_labels=probe_labels))
     return response
+
 
 @app.route('/post', methods=['POST'])
 def post():
@@ -59,8 +60,10 @@ def report():
     vals = session.query(DataTable).order_by(DataTable.timestamp.desc()).limit(12)
     return render_template('report.html', vals=vals)
 
+
 class SensorNameForm(Form):
-    name = TextField('Name', [validators.Required()])
+    name = TextField('Name', [validators.Required(), validators.length(max=128)])
+    short_name = TextField('Short Name', [validators.Required(), validators.length(max=20)])
     display = BooleanField('Displayed', default=True)
     submit_button = SubmitField('Add')
 
@@ -71,7 +74,7 @@ def sensorconfig():
     if request.method == 'POST':
         if form.validate():
             try:
-                nss = sakidb.sensors(name=form.name.data, display=form.display.data)
+                nss = sakidb.sensors(name=form.name.data, short_name=form.short_name.data, display=form.display.data)
                 session.merge(nss)
                 session.commit()
             except IntegrityError as ee:
@@ -81,21 +84,21 @@ def sensorconfig():
             flash(form.errors)
     return render_template('sensorconfig.html', form=form, vals=session.query(sakidb.sensors).order_by(sakidb.sensors.number))
 
+
 @app.route('/sensordelete', methods=['POST'])
 def sensordelete():
     res = session.query(sakidb.sensors).filter_by(number=request.form['pk']).delete()
     session.commit()
     return jsonify(result='OK', message="deleted %d" % res)
 
+
 @app.route('/sensordtoggle', methods=['POST'])
 def sensordtoggle():
     new_state = True if request.form['current'] == 'Hidden' else False
-    print  "new state is ", new_state
     session.query(sakidb.sensors.display).filter_by(number=request.form['pk']).update({'display': new_state})
     res = session.query(sakidb.sensors.display).filter_by(number=request.form['pk']).scalar()
-    print res
     session.commit()
-    return jsonify(result='OK', display='Displayed' if res == True else 'Hidden')
+    return jsonify(result='OK', display='Displayed' if res else 'Hidden')
 
 
 class AlertForm(Form):
@@ -198,6 +201,7 @@ def sensord(sensor, start, end, field_name, functions):
                  .order_by(table.c.timestamp)
     return qry
 
+
 @app.route('/jdata/<sensor>')
 @support_jsonp
 def jdata(sensor='0'):
@@ -209,6 +213,7 @@ def jdata(sensor='0'):
     else:
         qry = sensord(sensor, start, end, 'temperature', [func.max, func.min])
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
+
 
 @app.route('/jsond/<sensor>')       # sensors, '0' '1', '2', '3', 'nav', 'h3'
 def jsond(sensor='0'):
