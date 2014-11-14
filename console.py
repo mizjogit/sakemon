@@ -104,7 +104,10 @@ def sensordtoggle():
 
 @app.route('/graph')
 def graph():
-    return render_template('graph.html')
+    sensors = session.query(sakidb.Sensors.label).filter(sakidb.Sensors.display == True)
+    sensors = ','.join(["'%s'" % ('h' + sensor.label if sensor.label == 'RH' else sensor.label) for sensor in sensors])
+    print "sensors '%s'" % sensors
+    return render_template('graph.html', sensors=sensors)
 
 from functools import wraps
 from flask import current_app
@@ -158,8 +161,10 @@ def sensord(label, start, end, field_name, functions):
         fields.append(agg_func(table.c[agg_field_name]).label(agg_func_name))
     qry = session.query(table.c.timestamp, *fields) \
                  .group_by(func.round(func.unix_timestamp(table.c.timestamp).op('DIV')(seconds_per_sample_wanted))) \
-                 .filter(table.c.probe_label == label, table.c.timestamp >= start, table.c.timestamp <= end) \
+                 .filter(table.c.timestamp >= start, table.c.timestamp <= end) \
                  .order_by(table.c.timestamp)
+    if label:
+        qry = qry.filter(table.c.probe_label == label)
     return qry
 
 
@@ -182,7 +187,7 @@ def jsond(label=None):
 
     start, end = session.query(func.min(DataTable.timestamp), func.max(DataTable.timestamp)).first()
     if label == 'nav':
-        qry = sensord(label, start, end, 'temperature', [func.avg])
+        qry = sensord(None, start, end, 'temperature', [func.avg])
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
     elif label[0] == 'h':
         qry = sensord(label[1:], start, end, 'humidity', [func.avg])
