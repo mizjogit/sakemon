@@ -12,7 +12,7 @@
                 yAxisOptions = [],
                 navData = [],
                 seriesCounter = 0,
-                names = ['0', '1', '2', '3', 'h3'],
+                names = [{{sensors|safe}}],
                 colors = Highcharts.getOptions().colors;
 
             $.getJSON('/jsond/nav', function(data) { 

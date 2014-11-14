@@ -53,7 +53,7 @@ class ManagedTable:
             session.execute(insert(agg_table).from_select(['timestamp', 'probe_label'] + self.pvt_fields, qry))
 
     def optimal(self, probe_label, start_date, end_date):
-        target = 300
+        target = 200
 
         seconds = (end_date - start_date).total_seconds()
         seconds_per_sample_wanted = seconds / target
