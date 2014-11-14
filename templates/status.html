@@ -19,7 +19,7 @@
 
  {% for row in vals %}
 
-        $('#dial{{row.probe_number}}').highcharts({
+        $('#dial{{row.probe_label}}').highcharts({
         chart: {
             type: 'gauge',
             plotBackgroundColor: null,
@@ -29,7 +29,7 @@
         },
 
         title: {
-            text: '{{ probe_labels[row.probe_number] }}'
+            text: '{{ row.name }}'
         },
 
         pane: {
@@ -121,7 +121,7 @@
  		setInterval(function () {
                     var point = chart.series[0].points[0];
 
- 		    $.getJSON('/gauge/{{ row.probe_number }}' , function (data) {
+ 		    $.getJSON('/gauge/{{ row.probe_label }}' , function (data) {
                 			 point.update(data);
             			});
 			  console.log("There is a response");
@@ -286,8 +286,8 @@
         <table class="table">
         <thead>
           <tr>
-              <th>Probe Number</th>
-	      <th>Probe Label</th>
+              <th>Probe Label</th>
+              <th>Probe Name</th>
               <th>Temperature</th>
               <th>Humidity</th>
               <th>Time</th>
@@ -297,9 +297,9 @@
          {% for row in vals %}
                 <tr class="active-div" 
                      timeout=10000
-                     href="http://{{servahost}}/bmanagea/block?bid={{row.probe_number}}&okredir={{url_for('pstatus', sensor=row.probe_number, _external=True)}}">
-                    <td>{{ row.probe_number }}</td>
-		    <td>{{ probe_labels[row.probe_number] }}</td>
+                     href="http://{{servahost}}/bmanagea/block?bid={{row.probe_label}}&okredir={{url_for('pstatus', label=row.probe_label, _external=True)}}">
+                    <td>{{ row.probe_label }}</td>
+                    <td>{{ row.name }}</td>
                     <td>{{ row.temperature }}</td>
                     <td>{{ row.humidity }}</td>
                     <td>{{ row.timestamp.ctime() }}</td> 

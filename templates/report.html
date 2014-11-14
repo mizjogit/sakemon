@@ -14,7 +14,7 @@
         <table class="table">
         <thead>
           <tr>
-              <th>Probe Number</th>
+              <th>Probe Label</th>
               <th>Temperature</th>
               <th>Time</th>
           </tr>
@@ -22,7 +22,7 @@
         <tbody>
          {% for row in vals %}
             <tr>
-              <td>{{ row.probe_number }}</td>
+              <td>{{ row.probe_label }}</td>
               <td>{{ row.temperature }}</td>
               <td>{{ row.timestamp.ctime() }}</td>
             <tr>

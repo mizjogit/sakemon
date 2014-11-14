@@ -10,9 +10,8 @@
             <table class="table">
                 <thead>
                   <tr>
-                      <th>Number</th>
+                      <th>Label</th>
                       <th>Name</th>
-                      <th>Short Name</th>
                       <th>Displayed</th>
                       <th></th>
                   </tr>
@@ -20,11 +19,10 @@
                 <tbody>
                  {% for row in vals %}
                     <tr>
-                      <td>{{ row.number }}</td>
+                      <td>{{ row.label }}</td>
                       <td>{{ row.name }}</td>
-                      <td>{{ row.short_name }}</td>
-                      <td> <a data-pk={{row.number}} class="btn btn-sm toggle-display" role="button">{{ 'Displayed' if row.display else 'Hidden' }}</a> <td>
-                      <td> <button data-pk={{row.number}} class="btn btn-sm confirm-delete" role="button">Delete</button> <td>
+                      <td> <a data-pk={{row.label}} class="btn btn-sm toggle-display" role="button">{{ 'Displayed' if row.display else 'Hidden' }}</a> <td>
+                      <td> <button data-pk={{row.label}} class="btn btn-sm confirm-delete" role="button">Delete</button> <td>
                     <tr>
                  {% endfor %}
                 <tbody>
