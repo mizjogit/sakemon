@@ -1,5 +1,5 @@
-<td>{{ row.probe_number }}</td>
-<td>{{ probe_labels[row.probe_number] }}</td>
-<td>{{ row.temperature }}</td>
-<td>{{ row.humidity }}</td>
-<td>{{ row.timestamp.ctime() }}</td>
+<td>{{ row.Sensors.short_name }}</td>
+<td>{{ row.Sensors.name }}</td>
+<td>{{ row.DataTable.temperature }}</td>
+<td>{{ row.DataTable.humidity }}</td>
+<td>{{ row.DataTable.timestamp.ctime() }}</td> 
