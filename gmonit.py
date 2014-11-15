@@ -141,8 +141,13 @@ class CollectApp:
                                            temperature=wvals[station.label]['temp'],
                                            humidity=wvals[station.label]['relhum'],
                                            timestamp=datetime.datetime.now())
-                    self.session.add(dte)
+                    self.session.merge(dte)
                     self.session.commit()
+                    try:
+                        result = requests.post(self.unlock_target, {'bid': station.label})
+                        logger.info("weather unlocker reply %s" % result)
+                    except requests.exceptions.ConnectionError:
+                        logger.info("weather unlocker failed")
                 else:
                     print "no station", station.label
             gevent.sleep(500)
