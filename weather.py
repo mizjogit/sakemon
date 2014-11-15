@@ -14,3 +14,7 @@ def get():
                 pass
 
     return stations
+
+
+if __name__ == '__main__':
+    print get()
