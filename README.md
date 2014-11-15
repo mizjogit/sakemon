@@ -12,7 +12,7 @@ Sake Raspi Monitor
     drop table data600;
     drop table data3600;
     drop table data86400;
-    alter table data add column probe_label varchar(20);
+    alter table data add column probe_label varchar(40);
     update data set probe_label = 'FEXT' where probe_number = 0;
     update data set probe_label = 'FINT' where probe_number = 1;
     update data set probe_label = 'KOJI' where probe_number = 2;
