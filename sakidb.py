@@ -35,6 +35,7 @@ class ManagedTable:
             last = session.query(func.max(agg_table.c.timestamp)).scalar()
             if not last:
                 last = session.query(func.min(self.base_table.timestamp).label('timestamp')).scalar()
+            print "Agg .. ", period, agg_table.name, last
             if (last_data_time - last).total_seconds() < period:
                 print "Not data for tailed agg at", period, \
                       "last", last, \
