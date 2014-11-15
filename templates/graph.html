@@ -14,10 +14,8 @@
                 seriesCounter = 0,
                //  names = [{sensors|safe}],
                 sensors = {
-                    {% set counter = 0 %}
                     {%- for ii in sensors -%}
-                        '{{ii.label}}': {slot: {{counter}}, sclass: '{{ii.sclass}}', name: '{{ii.name}}'},
-                        {% set counter = counter + 1 %}
+                        '{{ii.label}}': {slot: {{loop.index0}}, sclass: '{{ii.sclass}}', name: '{{ii.name}}'},
                     {%- endfor -%} },
                 sensor_count = Object.keys(sensors).length,
                 colors = Highcharts.getOptions().colors;
