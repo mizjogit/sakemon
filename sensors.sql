@@ -26,6 +26,7 @@ DROP TABLE IF EXISTS `sensors`;
 CREATE TABLE `sensors` (
   `label` varchar(20) NOT NULL,
   `name` varchar(128) DEFAULT NULL,
+  `sclass` varchar(20) NOT NULL,
   `display` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`label`),
   UNIQUE KEY `name` (`name`)
@@ -38,7 +39,7 @@ CREATE TABLE `sensors` (
 
 LOCK TABLES `sensors` WRITE;
 /*!40000 ALTER TABLE `sensors` DISABLE KEYS */;
-INSERT INTO `sensors` VALUES ('FEXT','Fermenter External', True),('FINT','Fermenter Internal', True),('KOJI' ,'Koji Chamber', True),('RH','RH Probe', True);
+INSERT INTO `sensors` VALUES ('FEXT','Fermenter External', 'TEMP', True),('FINT','Fermenter Internal', 'TEMP', True),('KOJI' ,'Koji Chamber', 'TEMP', True),('RH','RH Probe', 'HUM', True);
 /*!40000 ALTER TABLE `sensors` ENABLE KEYS */;
 UNLOCK TABLES;
 

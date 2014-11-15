@@ -12,6 +12,7 @@
                   <tr>
                       <th>Label</th>
                       <th>Name</th>
+                      <th>Sensor Class</th>
                       <th>Displayed</th>
                       <th></th>
                   </tr>
@@ -21,6 +22,7 @@
                     <tr>
                       <td>{{ row.label }}</td>
                       <td>{{ row.name }}</td>
+                      <td>{{ row.sclass }}</td>
                       <td> <a data-pk={{row.label}} class="btn btn-sm toggle-display" role="button">{{ 'Displayed' if row.display else 'Hidden' }}</a> <td>
                       <td> <button data-pk={{row.label}} class="btn btn-sm confirm-delete" role="button">Delete</button> <td>
                     <tr>
