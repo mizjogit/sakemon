@@ -7,7 +7,7 @@ def get():
 
     stations = defaultdict(dict)
     for ii in soup.table.tbody.find_all('tr'):
-        for kk in ii.find_all('td', {'headers': ['obs-temp', 'obs-relhum']}):
+        for kk in ii.find_all('td', {'headers': ['obs-temp', 'obs-relhum', 'obs-datetime', 'obs-wind-spd-kph']}):
             try:
                 stations['_'.join(kk['headers'][1].split('-')[2:])][kk['headers'][0].split('-')[1]] = float(kk.text)
             except ValueError:
