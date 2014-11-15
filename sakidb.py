@@ -80,7 +80,7 @@ class ManagedTable:
 class DataTable(dbase):
     __tablename__ = 'data'
     timestamp = Column(types.DateTime, primary_key=True, nullable=False, default=datetime.datetime.now())
-    probe_label = Column(types.String(length=20), primary_key=True)
+    probe_label = Column(types.String(length=40), primary_key=True)
     temperature = Column(types.Float, nullable=False)
     humidity = Column(types.Float)
 
