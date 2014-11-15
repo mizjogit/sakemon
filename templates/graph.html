@@ -12,39 +12,48 @@
                 yAxisOptions = [],
                 navData = [],
                 seriesCounter = 0,
-                names = [{{sensors|safe}}],
+               //  names = [{sensors|safe}],
+                sensors = {
+                    {% set counter = 0 %}
+                    {%- for ii in sensors -%}
+                        '{{ii.label}}': {slot: {{counter}}, sclass: '{{ii.sclass}}', name: '{{ii.name}}'},
+                        {% set counter = counter + 1 %}
+                    {%- endfor -%} },
+                sensor_count = Object.keys(sensors).length,
                 colors = Highcharts.getOptions().colors;
 
             $.getJSON('/jsond/nav', function(data) { 
                 navData = data.data;
             });
-            $.each(names, function(i, name) {
-                $.getJSON('/jsond/'+ name, function(data) { 
-                    seriesOptions[i] = {
-                        name: "Sensor " + name,
+            var i = 0;
+            $.each(sensors, function(label, sensor) {
+                $.getJSON('/jsond/'+ label, function(data) { 
+                    seriesOptions[sensor.slot] = {
+                        name: label,
                         data: data.data
                    }; 
-                   if (name == 'h3') {
-                        seriesOptions[i].yAxis = 1;
-                        seriesOptions[i].type = 'line';
+                   if (sensor.sclass == 'HUM') {
+                        seriesOptions[sensor.slot].yAxis = 1;
+                        seriesOptions[sensor.slot].type = 'line';
                     } else {
-                        seriesOptions[i].yAxis = 0;
-                        seriesOptions[i].type = 'arearange';
+                        seriesOptions[sensor.slot].yAxis = 0;
+                        seriesOptions[sensor.slot].type = 'arearange';
                     }
                     seriesCounter++;
-                    if (seriesCounter == names.length) {
+                    if (seriesCounter == sensor_count) {
                         createChart();
                     }
                 });
+                i++;
             });
 
             function afterSetExtremes(e) {
                 var chart = $('#container').highcharts();
 
                 chart.showLoading('Loading data from server...');
-                $.each(names, function(ii, name) {
-                    $.getJSON('/jdata/' + name + '?start=' + Math.round(e.min) + '&end=' + Math.round(e.max) + '&callback=?', function (data) {
-                        chart.series[ii].setData(data.data);
+                $.each(sensors, function(label, sensor) {
+                    $.getJSON('/jdata/' + label + '?start=' + Math.round(e.min) + '&end=' + Math.round(e.max) + '&callback=?', function (data) {
+                        chart.series[sensor.slot].setData(data.data);
                         chart.hideLoading();
                     })
                 .error(function(jqXHR, textStatus, errorThrown) {

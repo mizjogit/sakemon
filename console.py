@@ -65,6 +65,7 @@ def report():
 class SensorNameForm(Form):
     label = TextField('Label (short name)', [validators.Required()])
     name = TextField('Name', [validators.Required()])
+    sclass = TextField('Sensor Class', [validators.Required()])
     display = BooleanField('Displayed', default=True)
     submit_button = SubmitField('Add')
 
@@ -75,7 +76,7 @@ def sensorconfig():
     if request.method == 'POST':
         if form.validate():
             try:
-                nss = sakidb.Sensors(name=form.name.data, label=form.label.data, display=form.display.data)
+                nss = sakidb.Sensors(name=form.name.data, sclass=form.sclass.data, label=form.label.data, display=form.display.data)
                 session.merge(nss)
                 session.commit()
             except IntegrityError as ee:
@@ -104,9 +105,7 @@ def sensordtoggle():
 
 @app.route('/graph')
 def graph():
-    sensors = session.query(sakidb.Sensors.label).filter(sakidb.Sensors.display == True)
-    sensors = ','.join(["'%s'" % ('h' + sensor.label if sensor.label == 'RH' else sensor.label) for sensor in sensors])
-    print "sensors '%s'" % sensors
+    sensors = session.query(sakidb.Sensors).filter(sakidb.Sensors.display == True).all()
     return render_template('graph.html', sensors=sensors)
 
 
@@ -179,8 +178,9 @@ def sensord(label, start, end, field_name, functions):
 def jdata(label=None):
     start = datetime.datetime.fromtimestamp(float(request.args.get('start')) / 1000.0)
     end = datetime.datetime.fromtimestamp(float(request.args.get('end')) / 1000.0)
-    if label[0] == 'h':
-        qry = sensord(label[1:], start, end, 'humidity', [func.avg])
+    sensor = session.query(sakidb.Sensors).filter(sakidb.Sensors.label == label).first()
+    if sensor.sclass == 'HUM':
+        qry = sensord(label, start, end, 'humidity', [func.avg])
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
     else:
         qry = sensord(label, start, end, 'temperature', [func.max, func.min])
@@ -191,12 +191,13 @@ def jdata(label=None):
 def jsond(label=None):
     # qry = session.query(Data).filter(Data.probe_label == sensor)
 
+    sensor = session.query(sakidb.Sensors).filter(sakidb.Sensors.label == label).first()
     start, end = session.query(func.min(DataTable.timestamp), func.max(DataTable.timestamp)).first()
     if label == 'nav':
         qry = sensord(None, start, end, 'temperature', [func.avg])
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
-    elif label[0] == 'h':
-        qry = sensord(label[1:], start, end, 'humidity', [func.avg])
+    elif sensor.sclass == 'HUM':
+        qry = sensord(label, start, end, 'humidity', [func.avg])
         return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
     else:
         qry = sensord(label, start, end, 'temperature', [func.max, func.min])
