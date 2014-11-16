@@ -13,124 +13,116 @@
 
 
     (function($){ // encapsulate jQuery
+         $(function() {
+             {% for row in vals %}
+                $('#dial{{row.probe_label}}').highcharts({
+                    chart: {
+                        type: 'gauge',
+                        plotBackgroundColor: null,
+                        plotBackgroundImage: null,
+                        plotBorderWidth: 0,
+                        plotShadow: false
+                    },
 
+                    title: {
+                        text: '{{ row.name }}'
+                    },
 
-     $(function() {
+                    pane: {
+                        startAngle: -150,
+                        endAngle: 150,
+                        background: [{
+                            backgroundColor: {
+                                linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                                stops: [
+                                    [0, '#FFF'],
+                                    [1, '#333']
+                                ]
+                            },
+                            borderWidth: 0,
+                            outerRadius: '109%'
+                        }, {
+                            backgroundColor: {
+                                linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                                stops: [
+                                    [0, '#333'],
+                                    [1, '#FFF']
+                                ]
+                            },
+                            borderWidth: 1,
+                            outerRadius: '107%'
+                        }, {
+                            // default background
+                        }, {
+                            backgroundColor: '#DDD',
+                            borderWidth: 0,
+                            outerRadius: '105%',
+                            innerRadius: '103%'
+                        }]
+                    },
 
- {% for row in vals %}
+                    // the value axis
+                    yAxis: {
+                        min: -20,
+                        max: 100,
 
-        $('#dial{{row.probe_label}}').highcharts({
-        chart: {
-            type: 'gauge',
-            plotBackgroundColor: null,
-            plotBackgroundImage: null,
-            plotBorderWidth: 0,
-            plotShadow: false
-        },
+                        minorTickInterval: 'auto',
+                        minorTickWidth: 1,
+                        minorTickLength: 10,
+                        minorTickPosition: 'inside',
+                        minorTickColor: '#666',
 
-        title: {
-            text: '{{ row.name }}'
-        },
+                        tickPixelInterval: 30,
+                        tickWidth: 2,
+                        tickPosition: 'inside',
+                        tickLength: 10,
+                        tickColor: '#666',
+                        labels: {
+                            step: 2,
+                            rotation: 'auto'
+                        },
+                        title: {
+                            text: 'deg C'
+                        },
+                        plotBands: [{
+                            from: -20,
+                            to: 0,
+                            color: '#55BF3B' // yellow
+                        }, {
+                            from: 0,
+                            to: 60,
+                            color: '#DDDF0D' // green
+                        }, {
+                            from: 60,
+                            to: 100,
+                            color: '#DF5353' // red
+                        }]
+                    },
 
-        pane: {
-            startAngle: -150,
-            endAngle: 150,
-            background: [{
-                backgroundColor: {
-                    linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-                    stops: [
-                        [0, '#FFF'],
-                        [1, '#333']
-                    ]
+                    series: [{
+                        name: 'Temperature',
+                        data: [80],
+                        tooltip: {
+                            valueSuffix: ' deg C'
+                        }
+                    }]
+
                 },
-                borderWidth: 0,
-                outerRadius: '109%'
-            }, {
-                backgroundColor: {
-                    linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-                    stops: [
-                        [0, '#333'],
-                        [1, '#FFF']
-                    ]
-                },
-                borderWidth: 1,
-                outerRadius: '107%'
-            }, {
-                // default background
-            }, {
-                backgroundColor: '#DDD',
-                borderWidth: 0,
-                outerRadius: '105%',
-                innerRadius: '103%'
-            }]
-        },
-
-        // the value axis
-        yAxis: {
-            min: -20,
-            max: 100,
-
-            minorTickInterval: 'auto',
-            minorTickWidth: 1,
-            minorTickLength: 10,
-            minorTickPosition: 'inside',
-            minorTickColor: '#666',
-
-            tickPixelInterval: 30,
-            tickWidth: 2,
-            tickPosition: 'inside',
-            tickLength: 10,
-            tickColor: '#666',
-            labels: {
-                step: 2,
-                rotation: 'auto'
-            },
-            title: {
-                text: 'deg C'
-            },
-            plotBands: [{
-                from: -20,
-                to: 0,
-                color: '#55BF3B' // yellow
-            }, {
-                from: 0,
-                to: 60,
-                color: '#DDDF0D' // green
-            }, {
-                from: 60,
-                to: 100,
-                color: '#DF5353' // red
-            }]
-        },
-
-        series: [{
-            name: 'Temperature',
-            data: [80],
-            tooltip: {
-                valueSuffix: ' deg C'
-            }
-        }]
-
-    },
 
         function (chart) {
             if (!chart.renderer.forExport) {
-                    var point = chart.series[0].points[0];
+                var point = chart.series[0].points[0];
                     point.update( {{ row.temperature }} );
 
- 		setInterval(function () {
+                setInterval(function () {
                     var point = chart.series[0].points[0];
-
- 		    $.getJSON('/gauge/{{ row.probe_label }}' , function (data) {
+                    $.getJSON('/gauge/{{ row.probe_label }}' , function (data) {
                 			 point.update(data);
-            			});
-			  console.log("There is a response");
+                    });
+                    console.log("There is a response");
                 }, 10000);
-
-
             }
         });
-
     {% endfor %}
 
 

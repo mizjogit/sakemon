@@ -30,6 +30,22 @@ session = Session()
 
 probe_labels = ['Fermenter Internal', 'Fermenter External', 'Koji Chamber', 'Humidity Probe']
 
+@app.route('/status2')
+def status2():
+    #     select data.probe_label,temperature,timestamp from data join (select probe_label, max(timestamp) as ts
+    # from data group by probe_label) as xx where xx.ts = timestamp and xx.probe_label = data.probe_label;
+    max_times = session.query(DataTable.probe_label, func.max(DataTable.timestamp).label('timestamp')).group_by(DataTable.probe_label).subquery()
+    vals = session.query(DataTable.probe_label,
+                         DataTable.temperature,
+                         DataTable.humidity,
+                         DataTable.timestamp,
+                         Sensors.name,
+                         Sensors.sclass) \
+                  .join(max_times, and_(max_times.c.timestamp == DataTable.timestamp, max_times.c.probe_label == DataTable.probe_label)) \
+                  .join(Sensors, DataTable.probe_label == Sensors.label) \
+                  .order_by(DataTable.probe_label)
+    response = make_response(render_template('status2.html', vals=vals, servahost=servahost))
+    return response
 
 @app.route('/status')
 def status():
@@ -136,15 +152,14 @@ def gstatus(label=None):
     row = session.query(DataTable.probe_label, DataTable.temperature, DataTable.humidity, DataTable.timestamp) \
                  .filter(DataTable.timestamp == max_time, DataTable.probe_label == label) \
                  .first()
-    response = make_response(render_template('status_gauge.html', row=row, probe_labels=probe_labels))
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    return response
+    return jsonify(data=row._asdict())
 
 
 @app.route('/pstatus/<label>')
 def pstatus(label=None):
     max_time = session.query(func.max(DataTable.timestamp)).filter(DataTable.probe_label == label).subquery()
-    row = session.query(DataTable.probe_label, DataTable.temperature, DataTable.humidity, DataTable.timestamp) \
+    row = session.query(DataTable.probe_label, DataTable.temperature, DataTable.humidity, DataTable.timestamp, Sensors.name) \
+                  .join(Sensors, DataTable.probe_label == Sensors.label) \
                  .filter(DataTable.timestamp == max_time, DataTable.probe_label == label) \
                  .first()
     response = make_response(render_template('status_frag.html', row=row, probe_labels=probe_labels))

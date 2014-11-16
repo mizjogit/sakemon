@@ -1,0 +1,188 @@
+{% extends "wkbase.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% set active_page = '/status' %}
+
+{%- block scripts %}
+    {{ super() }}
+    <script src="http://code.highcharts.com/stock/highstock.js" type="text/javascript"></script>
+    <script src="http://code.highcharts.com/highcharts-more.js"></script>
+    <script src="http://code.highcharts.com/modules/exporting.js"></script>
+    <script src="{{url_for('static', filename='js/active-div.js')}}" type="text/javascript"></script>
+    <script type="text/javascript">
+
+
+
+        (function($){ // encapsulate jQuery
+            chata_base = {
+                    chart: {
+                        type: 'gauge',
+                        plotBackgroundColor: null,
+                        plotBackgroundImage: null,
+                        plotBorderWidth: 0,
+                        plotShadow: false
+                    },
+
+
+                    pane: {
+                        startAngle: -150,
+                        endAngle: 150,
+                        background: [{
+                            backgroundColor: {
+                                linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                                stops: [
+                                    [0, '#FFF'],
+                                    [1, '#333']
+                                ]
+                            },
+                            borderWidth: 0,
+                            outerRadius: '109%'
+                        }, {
+                            backgroundColor: {
+                                linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                                stops: [
+                                    [0, '#333'],
+                                    [1, '#FFF']
+                                ]
+                            },
+                            borderWidth: 1,
+                            outerRadius: '107%'
+                        }, {
+                            // default background
+                        }, {
+                            backgroundColor: '#DDD',
+                            borderWidth: 0,
+                            outerRadius: '105%',
+                            innerRadius: '103%'
+                        }]
+                    },
+
+                    // the value axis
+                    yAxis: {
+                        min: 5,
+                        max: 80,
+
+                        minorTickInterval: 'auto',
+                        minorTickWidth: 1,
+                        minorTickLength: 10,
+                        minorTickPosition: 'inside',
+                        minorTickColor: '#666',
+
+                        tickPixelInterval: 30,
+                        tickWidth: 2,
+                        tickPosition: 'inside',
+                        tickLength: 10,
+                        tickColor: '#666',
+                        labels: {
+                            step: 2,
+                            rotation: 'auto'
+                        },
+                        title: {
+                            text: 'deg C'
+                        },
+                        plotBands: [{
+                            from: -20,
+                            to: 0,
+                            color: '#55BF3B' // yellow
+                        }, {
+                            from: 0,
+                            to: 60,
+                            color: '#DDDF0D' // green
+                        }, {
+                            from: 60,
+                            to: 100,
+                            color: '#DF5353' // red
+                        }]
+                    }
+                };
+             $(function() {
+             {% for row in vals %}
+             var chata = chata_base,
+                stext = '{{ ' % RH' if row.sclass == 'HUM' else ' deg C' }}';
+                chata.title = { text: '{{ row.name }}' };
+                chata.yAxis.title.text = stext;
+                {% if row.sclass == 'HUM' %}
+                    chata.yAxis.max = 100;
+                    chata.yAxis.min = 0;
+                {% endif %}
+                chata.series = [{
+                        name: '{{ row.name }}',
+                        data: [90],
+                        tooltip: {
+                            valueSuffix: stext
+                        },
+                        title: {
+                            text: stext
+                        }
+                    }]
+                 $('#dial{{row.probe_label}}').highcharts(
+                     chata, 
+                    function (chart) {
+                        if (!chart.renderer.forExport) {
+                            var point = chart.series[0].points[0];
+                                {% if row.sclass == 'HUM' %}
+                                    point.update({{row.humidity}});
+                                {% else %}
+                                    point.update({{row.temperature}});
+                                {% endif %}
+
+                            setInterval(function () {
+                                var point = chart.series[0].points[0];
+                                $.getJSON('/gauge/{{ row.probe_label }}' , function (data) {
+                                    {% if row.sclass == 'HUM' %}
+                                        point.update(data.humidity);
+                                    {% else %}
+                                        point.update(data.temperature);
+                                    {% endif %}
+                                });
+                            }, 10000);
+                        }
+                    });
+            {% endfor %}
+        });
+    })(jQuery);
+   </script>
+{%- endblock %}
+
+
+{% block body_with_flasher %}
+    <div class="container">
+         <blockquote>
+            Probe Status
+         </blockquote>
+    </div>
+
+    <div class="container-fluid">
+        {% for row in vals %}
+            <div class="col-sm-3" id="dial{{row.probe_label}}"></div>
+        {% endfor %}
+    </div>
+
+    <div class="container">
+        <table class="table">
+        <thead>
+          <tr>
+              <th>Probe Label</th>
+              <th>Probe Name</th>
+              <th>Temperature</th>
+              <th>Humidity</th>
+              <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+         {% for row in vals %}
+                <tr class="active-div" 
+                     timeout=10000
+                     href="http://{{servahost}}/bmanagea/block?bid={{row.probe_label}}&okredir={{url_for('pstatus', label=row.probe_label, _external=True)}}">
+                    <td>{{ row.probe_label }}</td>
+                    <td>{{ row.name }}</td>
+                    <td>{{ row.temperature }}</td>
+                    <td>{{ row.humidity }}</td>
+                    <td>{{ row.timestamp.ctime() }}</td> 
+                 </tr>
+         {% endfor %}
+        <tbody>
+    </table>
+    </div>
+
+
+{% endblock %}
