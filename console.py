@@ -68,7 +68,6 @@ def status():
 def post():
     for probe, temp in request.form.items():
         session.add(DataTable(probe, temp))
-    session.commit()
     return " "
 
 
@@ -94,7 +93,6 @@ def sensorconfig():
             try:
                 nss = sakidb.Sensors(name=form.name.data, sclass=form.sclass.data, label=form.label.data, display=form.display.data)
                 session.merge(nss)
-                session.commit()
             except IntegrityError as ee:
                 flash(ee.message)
                 session.rollback()
@@ -106,7 +104,6 @@ def sensorconfig():
 @app.route('/sensordelete', methods=['POST'])
 def sensordelete():
     res = session.query(sakidb.Sensors).filter_by(label=request.form['pk']).delete()
-    session.commit()
     return jsonify(result='OK', message="deleted %d" % res)
 
 
@@ -115,7 +112,6 @@ def sensordtoggle():
     new_state = True if request.form['current'] == 'Hidden' else False
     session.query(sakidb.Sensors.display).filter_by(label=request.form['pk']).update({'display': new_state})
     res = session.query(sakidb.Sensors.display).filter_by(label=request.form['pk']).scalar()
-    session.commit()
     return jsonify(result='OK', display='Displayed' if res else 'Hidden')
 
 
@@ -152,7 +148,7 @@ def gstatus(label=None):
     row = session.query(DataTable.probe_label, DataTable.temperature, DataTable.humidity, DataTable.timestamp) \
                  .filter(DataTable.timestamp == max_time, DataTable.probe_label == label) \
                  .first()
-    return jsonify(data=row._asdict())
+    return jsonify(row._asdict())
 
 
 @app.route('/pstatus/<label>')
@@ -216,4 +212,8 @@ def jsond(label=None):
 app.secret_key = "\xcd\x1f\xc6O\x04\x18\x0eFN\xf9\x0c,\xfb4{''<\x9b\xfc\x08\x87\xe9\x13"
 
 if __name__ == '__main__':
+    @app.after_request
+    def session_commit(response):
+        session.commit()
+        return response
     app.run(debug=True, port=8080, host='0.0.0.0')

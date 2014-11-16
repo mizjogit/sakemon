@@ -35,13 +35,12 @@ class ManagedTable:
             last = session.query(func.max(agg_table.c.timestamp)).scalar()
             if not last:
                 last = session.query(func.min(self.base_table.timestamp).label('timestamp')).scalar()
-            print "Agg .. ", period, agg_table.name, last
             if (last_data_time - last).total_seconds() < period:
-                print "Not data for tailed agg at", period, \
-                      "last", last, \
-                      "last_data_time", last_data_time, \
-                      "seconds", (last_data_time - last).total_seconds(), \
-                      "days", (last_data_time - last).days
+#                print "Not data for tailed agg at", period, \
+#                      "last", last, \
+#                      "last_data_time", last_data_time, \
+#                      "seconds", (last_data_time - last).total_seconds(), \
+#                      "days", (last_data_time - last).days
                 continue
             last += datetime.timedelta(seconds=period)
             funs = list()
@@ -85,7 +84,7 @@ class DataTable(dbase):
     humidity = Column(types.Float)
 
     def __repr__(self):
-        return "<date(%d, %3.2f,% 3.2f, %s)>" % (self.probe_label, self.temperature,
+        return "<date(%s, %3.2f,% 3.2f, %s)>" % (self.probe_label, self.temperature,
                                                  self.humidity if self.humidity else 0.0,
                                                  str(self.timestamp))
 

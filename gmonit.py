@@ -152,9 +152,20 @@ class CollectApp:
                     print "no station", station.label
             gevent.sleep(500)
 
+    def simulator(self):
+        while True:
+            dte = sakidb.DataTable(probe_label='SIM1',
+                                   temperature=datetime.datetime.now().second / 10 + 30,
+                                   timestamp=datetime.datetime.now())
+            self.session.merge(dte)
+            self.session.commit()
+            result = requests.post(self.unlock_target, {'bid': 'SIM1'})
+            print "simulatpr", result, dte
+            gevent.sleep(11)
+
+
     def aggregator(self):
         while True:
-            print "Aggregator"
             sakidb.mtable.check_agg(self.session)
             gevent.sleep(60)
 
@@ -168,5 +179,7 @@ if __name__ == '__main__':
     if not options.simulator:
         gevent.spawn(functools.partial(CollectApp.read_dht22, semapp))
         gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
+    else:
+        gevent.spawn(functools.partial(CollectApp.simulator, semapp))
     gevent.spawn(functools.partial(CollectApp.aggregator, semapp))
     WSGIServer(('0.0.0.0', 8089), functools.partial(CollectApp.application, semapp)).serve_forever()
