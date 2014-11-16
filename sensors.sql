@@ -24,14 +24,13 @@ DROP TABLE IF EXISTS `sensors`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `sensors` (
-  `number` int(11) NOT NULL AUTO_INCREMENT,
+  `label` varchar(20) NOT NULL,
   `name` varchar(128) DEFAULT NULL,
-  `short_name` varchar(20) NOT NULL,
+  `sclass` varchar(20) NOT NULL,
   `display` tinyint(1) DEFAULT NULL,
-  PRIMARY KEY (`number`),
-  UNIQUE KEY `name` (`name`),
-  UNIQUE KEY `short_name` (`short_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=latin1;
+  PRIMARY KEY (`label`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -40,7 +39,7 @@ CREATE TABLE `sensors` (
 
 LOCK TABLES `sensors` WRITE;
 /*!40000 ALTER TABLE `sensors` DISABLE KEYS */;
-INSERT INTO `sensors` VALUES (0,'Fermenter External', 'FEXT', True),(1,'Fermenter Internal', 'FINT', True),(2,'Koji Chamber', 'KOJI', True),(3,'RH Probe', 'RH', True);
+INSERT INTO `sensors` VALUES ('FEXT','Fermenter External', 'TEMP', True),('FINT','Fermenter Internal', 'TEMP', True),('KOJI' ,'Koji Chamber', 'TEMP', True),('RH','RH Probe', 'HUM', True);
 /*!40000 ALTER TABLE `sensors` ENABLE KEYS */;
 UNLOCK TABLES;
 

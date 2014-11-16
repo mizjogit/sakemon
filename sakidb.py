@@ -36,24 +36,24 @@ class ManagedTable:
             if not last:
                 last = session.query(func.min(self.base_table.timestamp).label('timestamp')).scalar()
             if (last_data_time - last).total_seconds() < period:
-                print "Not data for tailed agg at", period, \
-                      "last", last, \
-                      "last_data_time", last_data_time, \
-                      "seconds", (last_data_time - last).total_seconds(), \
-                      "days", (last_data_time - last).days
+#                print "Not data for tailed agg at", period, \
+#                      "last", last, \
+#                      "last_data_time", last_data_time, \
+#                      "seconds", (last_data_time - last).total_seconds(), \
+#                      "days", (last_data_time - last).days
                 continue
             last += datetime.timedelta(seconds=period)
             funs = list()
             insp = inspect(self.base_table)
             for field, pvt_funs in self.pvt.iteritems():
                 funs.extend([fun(insp.columns[field]) for fun in pvt_funs])
-            qry = session.query(self.base_table.timestamp, self.base_table.probe_number, *funs) \
-                         .group_by(func.round(func.unix_timestamp(self.base_table.timestamp).op('DIV')(period)), self.base_table.probe_number) \
+            qry = session.query(self.base_table.timestamp, self.base_table.probe_label, *funs) \
+                         .group_by(func.round(func.unix_timestamp(self.base_table.timestamp).op('DIV')(period)), self.base_table.probe_label) \
                          .filter(self.base_table.timestamp > last)
-            session.execute(insert(agg_table).from_select(['timestamp', 'probe_number'] + self.pvt_fields, qry))
+            session.execute(insert(agg_table).from_select(['timestamp', 'probe_label'] + self.pvt_fields, qry))
 
-    def optimal(self, probe_number, start_date, end_date):
-        target = 300
+    def optimal(self, probe_label, start_date, end_date):
+        target = 200
 
         seconds = (end_date - start_date).total_seconds()
         seconds_per_sample_wanted = seconds / target
@@ -78,27 +78,27 @@ class ManagedTable:
 
 class DataTable(dbase):
     __tablename__ = 'data'
-    probe_number = Column(types.Integer, primary_key=True, autoincrement=False, nullable=False)
+    timestamp = Column(types.DateTime, primary_key=True, nullable=False, default=datetime.datetime.now())
+    probe_label = Column(types.String(length=40), primary_key=True)
     temperature = Column(types.Float, nullable=False)
     humidity = Column(types.Float)
-    timestamp = Column(types.DateTime, primary_key=True, nullable=False, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<date(%d, %3.2f,% 3.2f, %s)>" % (self.probe_number, self.temperature,
+        return "<date(%s, %3.2f,% 3.2f, %s)>" % (self.probe_label, self.temperature,
                                                  self.humidity if self.humidity else 0.0,
                                                  str(self.timestamp))
 
 
 # this one is use for max(DataTable.timestamp)
-# the native PK is probe_number,timestamp
+# the native PK is probe_label,timestamp
 
 Index(u'data_timestamp_idx', DataTable.timestamp, unique=False)
 
-class sensors(dbase):
+class Sensors(dbase):
     __tablename__ = 'sensors'
-    number = Column(types.Integer, primary_key=True, nullable=False)
+    label = Column(types.String(length=30), primary_key=True)
     name = Column(types.String(length=128), unique=True)
-    short_name = Column(types.String(length=20), unique=True, nullable=False)
+    sclass = Column(types.String(length=20), nullable=False)
     display = Column(types.Boolean)     #  alter table sensors add column display bool; update sensors set display = True;
 
 

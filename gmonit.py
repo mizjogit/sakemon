@@ -130,28 +130,56 @@ class CollectApp:
             gevent.sleep(self.sleep_interval)
 
 
-    def weather(self, station):
+    def weather(self):
+        stations = self.session.query(sakidb.Sensors.label).filter(sakidb.Sensors.sclass == 'EXTEMP').all()
         while True:
-            stations = weather.get()
-            print stations[station]
+            wvals = weather.get()
+            for station in stations:
+                if station.label in wvals:
+                    print wvals[station.label]
+                    dte = sakidb.DataTable(probe_label=station.label,
+                                           temperature=wvals[station.label]['temp'],
+                                           humidity=wvals[station.label]['relhum'],
+                                           timestamp=datetime.datetime.now())
+                    self.session.merge(dte)
+                    self.session.commit()
+                    try:
+                        result = requests.post(self.unlock_target, {'bid': station.label})
+                        logger.info("weather unlocker reply %s" % result)
+                    except requests.exceptions.ConnectionError:
+                        logger.info("weather unlocker failed")
+                else:
+                    print "no station", station.label
             gevent.sleep(500)
+
+    def simulator(self):
+        while True:
+            dte = sakidb.DataTable(probe_label='SIM1',
+                                   temperature=datetime.datetime.now().second / 10 + 30,
+                                   timestamp=datetime.datetime.now())
+            self.session.merge(dte)
+            self.session.commit()
+            result = requests.post(self.unlock_target, {'bid': 'SIM1'})
+            print "simulatpr", result, dte
+            gevent.sleep(11)
+
 
     def aggregator(self):
         while True:
-            print "Aggregator"
             sakidb.mtable.check_agg(self.session)
             gevent.sleep(60)
 
 if __name__ == '__main__':
     parser = optparse.OptionParser()
     parser.add_option("-s", "--simulator", dest="simulator", action="store_true", default=None, help="Run simulator")
-    parser.add_option("-w", "--weather", dest="weather", default=None, help="Get basline weather")
+    parser.add_option("-w", "--weather", dest="weather", action="store_true", default=None, help="Get basline weather")
     options, args = parser.parse_args()
     semapp = CollectApp(cstring, options.simulator)
-    if options.simulator:
-        gevent.spawn(functools.partial(CollectApp.weather, semapp), options.weather)
-    else:
+    gevent.spawn(functools.partial(CollectApp.weather, semapp))
+    if not options.simulator:
         gevent.spawn(functools.partial(CollectApp.read_dht22, semapp))
         gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
+    else:
+        gevent.spawn(functools.partial(CollectApp.simulator, semapp))
     gevent.spawn(functools.partial(CollectApp.aggregator, semapp))
     WSGIServer(('0.0.0.0', 8089), functools.partial(CollectApp.application, semapp)).serve_forever()
