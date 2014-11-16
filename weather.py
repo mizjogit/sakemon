@@ -13,7 +13,7 @@ def get():
                 vtype = kk['headers'][0].split('-')[1]
                 if vtype == 'datetime':
                     value = datetime.datetime.combine(datetime.datetime.today() \
-                                                              .replace(day=int(kk.text[:kk.text.find('/')])),
+                                                              .replace(second=0, day=int(kk.text[:kk.text.find('/')])),
                                                       datetime.datetime.strptime(kk.text[kk.text.find('/') + 1:], '%I:%M%p').time())
                 else:
                     value = float(kk.text)
