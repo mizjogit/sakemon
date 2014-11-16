@@ -14,7 +14,7 @@ from flask.ext.wtf import Form
 from wtforms import TextField, validators, SubmitField, BooleanField
 
 import sakidb
-from sakidb import DataTable, mtable
+from sakidb import DataTable, mtable, sensors
 
 sys.stdout = sys.stderr
 
@@ -43,7 +43,8 @@ def status():
                          DataTable.timestamp) \
                   .join(max_times, and_(max_times.c.timestamp == DataTable.timestamp, max_times.c.probe_number == DataTable.probe_number)) \
                   .order_by(DataTable.probe_number)
-    response = make_response(render_template('status.html', vals=vals, servahost=servahost, probe_labels=probe_labels))
+    sensor = session.query(sensors.number,sensors.display)
+    response = make_response(render_template('status.html', vals=vals, servahost=servahost, probe_labels=probe_labels, sensor=sensor))
     return response
 
 
