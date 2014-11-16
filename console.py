@@ -108,6 +108,7 @@ def graph():
     sensors = session.query(sakidb.Sensors).filter(sakidb.Sensors.display == True).all()
     return render_template('graph.html', sensors=sensors)
 
+
 from functools import wraps
 from flask import current_app
 

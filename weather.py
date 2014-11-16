@@ -8,7 +8,7 @@ def get():
 
     stations = defaultdict(dict)
     for ii in soup.table.tbody.find_all('tr'):
-        for kk in ii.find_all('td', {'headers': ['obs-temp', 'obs-relhum', 'obs-datetime']}):
+        for kk in ii.find_all('td', {'headers': ['obs-temp', 'obs-relhum', 'obs-datetime', 'obs-wind-spd-kph']}):
             try:
                 vtype = kk['headers'][0].split('-')[1]
                 if vtype == 'datetime':
