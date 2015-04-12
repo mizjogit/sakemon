@@ -20,7 +20,8 @@ from gevent.pywsgi import WSGIServer
 from engineconfig import cstring
 
 import sakidb
-
+import sys
+import Adafruit_DHT
 import weather
 
 logger = logging.getLogger('templogger')
@@ -34,7 +35,7 @@ gevent.monkey.patch_all()
 
 
 def get_ds_temp(port):
-    probe = ['28-00000405860e', '28-00000405bb1e', '28-00000405c040']
+    probe = ['28-0000057c6966', '28-000005879fd0']
     devicefile = '/sys/bus/w1/devices/' + probe[port] + '/w1_slave'
     try:
         with open(devicefile, 'r') as fileobj:
@@ -68,7 +69,7 @@ def SimulateDsTemp(port):
     return 26
 
 class CollectApp:
-    def __init__(self, cstring, simulator=None, ports=3):
+    def __init__(self, cstring, simulator=None, ports=2):
         self.session = sessionmaker(bind=create_engine(cstring))()
         self.ports = ports
         self.sleep_interval = speriod
@@ -110,12 +111,9 @@ class CollectApp:
 
     def read_dht22(self):
         while True:
-	    output = subprocess.check_output(["/home/sakemon/sakemon/Adafruit_DHT", "2302", "22" ]);
-    	    matches = re.search("Temp =\s+([0-9.]+)", output)
-    	    if (matches):
-        	   temp = float(matches.group(1))
-           	   matches = re.search("Hum =\s+([0-9.]+)", output)
-        	   humidity = float(matches.group(1))
+	    humidity, temp = Adafruit_DHT.read_retry(Adafruit_DHT.AM2302, 22)
+   	    if humidity is not None and temp is not None:
+	           #print 'Temp={0:0.1f}*C  Humidity={1:0.1f}%'.format(temp, humidity)
             	   logger.info('DHT22 Probe=3 Temp={1:0.1f} Humidity={2:0.1f}'.format(3, temp, humidity))
             	   dte = sakidb.DataTable(probe_label='RH', temperature=temp, humidity=humidity, timestamp=datetime.datetime.now())
             	   self.session.add(dte)
@@ -171,7 +169,7 @@ if __name__ == '__main__':
     gevent.spawn(functools.partial(CollectApp.weather, semapp))
     if not options.simulator:
         gevent.spawn(functools.partial(CollectApp.read_dht22, semapp))
-        gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
+        #gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
     else:
         gevent.spawn(functools.partial(CollectApp.simulator, semapp))
     gevent.spawn(functools.partial(CollectApp.aggregator, semapp))
