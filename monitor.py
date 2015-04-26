@@ -13,7 +13,7 @@ import dhtreader
 #device_file = device_folder + '/w1_slave'
 
 probe=['28-00000405860e','28-00000405bb1e','28-00000405c040']
-speriod=10
+speriod=30
 humidity=0
 mydb = MySQLdb.connect(host='localhost', user='root', passwd='Schumacher4', db='templogger')
 

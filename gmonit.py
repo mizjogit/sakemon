@@ -29,7 +29,7 @@ logging.basicConfig()
 logger.setLevel(logging.DEBUG)
 
 
-speriod = 10
+speriod = 15
 
 gevent.monkey.patch_all()
 
@@ -169,7 +169,7 @@ if __name__ == '__main__':
     gevent.spawn(functools.partial(CollectApp.weather, semapp))
     if not options.simulator:
         gevent.spawn(functools.partial(CollectApp.read_dht22, semapp))
-        #gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
+        gevent.spawn(functools.partial(CollectApp.read_ds18B20, semapp))
     else:
         gevent.spawn(functools.partial(CollectApp.simulator, semapp))
     gevent.spawn(functools.partial(CollectApp.aggregator, semapp))
