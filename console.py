@@ -2,8 +2,10 @@
 import sys
 import time
 import datetime
+import calendar
+from dateutil import tz
 
-from flask import Flask, make_response, jsonify, render_template, request, flash
+from flask import g,Flask, make_response, jsonify, render_template, request, flash
 
 from sqlalchemy import create_engine, func, and_
 from sqlalchemy.orm import sessionmaker
@@ -179,6 +181,28 @@ def sensord(label, start, end, field_name, functions):
     return qry
 
 
+
+
+
+
+def utc1ktztolocal(onekts):
+    from_zone = tz.tzutc()
+    to_zone = tz.tzlocal()
+    utc = datetime.datetime.fromtimestamp(float(onekts) / 1000.0).replace(tzinfo=from_zone)
+    out = utc.astimezone(to_zone).replace(tzinfo=None)
+    return out
+
+
+def localtoutc1k(tt):
+    from_zone = tz.tzlocal()
+    to_zone = tz.tzutc()
+    local = tt.replace(tzinfo=from_zone)
+    out = local.astimezone(to_zone).replace(tzinfo=None)
+    return calendar.timegm(out.timetuple()) * 1000.0
+
+
+
+
 @app.route('/jdata/<label>')
 @support_jsonp
 def jdata(label=None):
@@ -187,10 +211,10 @@ def jdata(label=None):
     sensor = session.query(sakidb.Sensors).filter(sakidb.Sensors.label == label).first()
     if sensor.sclass == 'HUM':
         qry = sensord(label, start, end, 'humidity', [func.avg])
-        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
+        return jsonify(data=[dict(x=localtoutc1k(ii.timestamp), y=ii.avg) for ii in qry])
     else:
         qry = sensord(label, start, end, 'temperature', [func.max, func.min])
-        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
+        return jsonify(data=[dict(x=localtoutc1k(ii.timestamp), low=ii.min, high=ii.max) for ii in qry])
 
 
 @app.route('/jsond/<label>')       # sensors, '0' '1', '2', '3', 'nav', 'h3'
@@ -201,13 +225,18 @@ def jsond(label=None):
     start, end = session.query(func.min(DataTable.timestamp), func.max(DataTable.timestamp)).first()
     if label == 'nav':
         qry = sensord(None, start, end, 'temperature', [func.avg])
-        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
+        return jsonify(data=[dict(x=localtoutc1k(ii.timestamp), y=ii.avg) for ii in qry])
     elif sensor.sclass == 'HUM':
         qry = sensord(label, start, end, 'humidity', [func.avg])
-        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, y=ii.avg) for ii in qry])
+        return jsonify(data=[dict(x=localtoutc1k(ii.timestamp), y=ii.avg) for ii in qry])
     else:
         qry = sensord(label, start, end, 'temperature', [func.max, func.min])
-        return jsonify(data=[dict(x=int(time.mktime(ii.timestamp.timetuple())) * 1000, low=ii.min, high=ii.max) for ii in qry])
+        return jsonify(data=[dict(x=localtoutc1k(ii.timestamp), low=ii.min, high=ii.max) for ii in qry])
+
+
+
+
+
 
 app.secret_key = "\xcd\x1f\xc6O\x04\x18\x0eFN\xf9\x0c,\xfb4{''<\x9b\xfc\x08\x87\xe9\x13"
 
