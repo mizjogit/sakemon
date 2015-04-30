@@ -3,11 +3,21 @@
 {% set active_page = '/graph' %}
 {%- block scripts %}
      {{ super() }}
-    <script src="http://code.highcharts.com/stock/highstock.js" type="text/javascript"></script>
-    <script src="http://code.highcharts.com/stock/highcharts-more.js" type="text/javascript"></script>
+     {#    <script src="http://code.highcharts.com/stock/highstock.js" type="text/javascript"></script>
+     <script src="http://code.highcharts.com/stock/highcharts-more.js" type="text/javascript"></script> #}
+     <script src="//cdnjs.cloudflare.com/ajax/libs/highstock/2.0.4/highstock.js" type="text/javascript"></script>
+     <script src="//cdnjs.cloudflare.com/ajax/libs/highstock/2.0.4/highcharts-more.js" type="text/javascript"></script> 
     <script type="text/javascript">
     (function($){ // encapsulate jQuery
         $(function() {
+            var x = new Date();
+            var tzOffset = x.getTimezoneOffset();
+            Highcharts.setOptions({
+                global: {
+                    useUTC: false, // true,
+                    timezoneOffset: tzOffset
+                }
+            });
             var seriesOptions = [],
                 yAxisOptions = [],
                 navData = [],
@@ -47,10 +57,10 @@
 
             function afterSetExtremes(e) {
                 var chart = $('#container').highcharts();
-
+                var tzOffset = new Date().getTimezoneOffset() * 60.0 * 1000.0;
                 chart.showLoading('Loading data from server...');
                 $.each(sensors, function(label, sensor) {
-                    $.getJSON('/jdata/' + label + '?start=' + Math.round(e.min) + '&end=' + Math.round(e.max) + '&callback=?', function (data) {
+                    $.getJSON('/jdata/' + label + '?start=' + Math.round(e.min + tzOffset) + '&end=' + Math.round(e.max + tzOffset) + '&callback=?', function (data) {
                         chart.series[sensor.slot].setData(data.data);
                         chart.hideLoading();
                     })
@@ -93,6 +103,7 @@
                         selected : 4 // all
                     },
                     xAxis : {
+                       ordinal: false,
                         events : {
                             afterSetExtremes : afterSetExtremes
                         },
@@ -102,7 +113,7 @@
                             text: 'Temperature Range',
                         },
                         height: '80%',
-		        offset: 50 
+                            offset: 50 
 
                     }, {
                         title: {
