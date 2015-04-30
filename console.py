@@ -206,8 +206,8 @@ def localtoutc1k(tt):
 @app.route('/jdata/<label>')
 @support_jsonp
 def jdata(label=None):
-    start = datetime.datetime.fromtimestamp(float(request.args.get('start')) / 1000.0)
-    end = datetime.datetime.fromtimestamp(float(request.args.get('end')) / 1000.0)
+    start = utc1ktztolocal(request.args.get('start'))
+    end = utc1ktztolocal(request.args.get('end'))
     sensor = session.query(sakidb.Sensors).filter(sakidb.Sensors.label == label).first()
     if sensor.sclass == 'HUM':
         qry = sensord(label, start, end, 'humidity', [func.avg])
