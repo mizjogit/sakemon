@@ -103,11 +103,15 @@
                         selected : 4 // all
                     },
                     xAxis : {
-                       ordinal: false,
+              		tickInterval: 24 * 3600 * 1000, // one week
+                	tickWidth: 0,
+                	gridLineWidth: 1,
+                       	ordinal: false,
                         events : {
                             afterSetExtremes : afterSetExtremes
                         },
                     },
+
                     yAxis: [{
                         title: {
                             text: 'Temperature Range',
@@ -120,9 +124,10 @@
                                text: 'Humidity',
                         },
                         top: '70%',
-                        offset: 100,
+                        offset: 50,
                         height: '50%'
                     }],
+
                 });
             }
 
