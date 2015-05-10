@@ -1,0 +1,22 @@
+Feature requests
+
+
+Data Management tab:
+Dump data - remove all templogger->data 
+Ability to save the templogger->data as an entity, that can be reloaded in the future
+
+
+Config Page:
+Probe label updates
+Probe update frequency
+
+Graph Page:
+Annotations - ability to write text at points on the graph
+or
+a scratch pad that i can write to that is stored with the graph
+
+
+Addition of an I/O menu:
+I/O -> Outputs -> Fan, Stirer, Element (labels configurable via config page)
+I/O's should be toggled via menu select (highlighted or ticked when output is on)
+I/O output pin also configurable via config page
