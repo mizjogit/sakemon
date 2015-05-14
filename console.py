@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 import sys
-import time
 import datetime
 import calendar
 from dateutil import tz
 
-from flask import g,Flask, make_response, jsonify, render_template, request, flash
+from flask import Flask, make_response, jsonify, render_template, request, flash
 
 from sqlalchemy import create_engine, func, and_
 from sqlalchemy.orm import sessionmaker
