@@ -10,6 +10,7 @@ from sqlalchemy import func, insert
 
 dbase = declarative_base()
 
+from menu_states import menu_states, MItem
 
 class ManagedTable:
     def __init__(self, base_table, aggs, pvt):
@@ -101,6 +102,11 @@ class Sensors(dbase):
     sclass = Column(types.String(length=20), nullable=False)
     display = Column(types.Boolean)     #  alter table sensors add column display bool; update sensors set display = True;
 
+class IODevice(dbase):
+    __tablename__ = 'io_devices'
+    name = Column(types.String(length=30), primary_key=True)
+    state = Column(types.Boolean)
+    port = Column(types.Integer)
 
 class config(dbase):
     __tablename__ = 'config'
@@ -127,6 +133,7 @@ if __name__ == '__main__':
     parser.add_option("-m", "--monitor", dest="monitor", action="store_true", default=None, help="monitor and update")
     parser.add_option("-d", "--delete", dest="delete", action="store_true", default=None, help="delete data from 'data' tables")
     parser.add_option("-r", "--drop-all", dest="drop_all", action="store_true", default=None, help="drop all 'data' tables")
+    parser.add_option("-a", "--add-sensors", dest="add_sensors", action="store_true", default=None, help="add sensors")
     options, args = parser.parse_args()
 
     engine = create_engine(cstring, pool_recycle=3600)
@@ -158,3 +165,8 @@ if __name__ == '__main__':
             mtable.update(session, last_data_time)
             session.commit()
             time.sleep(60)
+    if options.add_sensors:
+        for key, item in menu_states.items():
+            ac = IODevice(name=key, state=item.state, port=item.port)
+            session.add(ac)
+        session.commit()
