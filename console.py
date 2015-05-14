@@ -4,7 +4,7 @@ import datetime
 import calendar
 from dateutil import tz
 
-from flask import Flask, make_response, jsonify, render_template, request, flash
+from flask import Flask, make_response, jsonify, render_template, request, flash, abort, redirect
 
 from sqlalchemy import create_engine, func, and_
 from sqlalchemy.orm import sessionmaker
@@ -15,12 +15,15 @@ from flask.ext.wtf import Form
 from wtforms import TextField, validators, SubmitField, BooleanField
 
 import sakidb
-from sakidb import DataTable, mtable, Sensors
+from sakidb import DataTable, mtable, Sensors, IODevice
+
+from menu_states import menu_states, MItem
 
 sys.stdout = sys.stderr
 
 app = Flask(__name__)
 Bootstrap(app)
+app.jinja_env.globals['menu_states'] = menu_states
 # CSRF_ENABLED = False
 app.debug = True
 
@@ -233,15 +236,34 @@ def jsond(label=None):
         return jsonify(data=[dict(x=localtoutc1k(ii.timestamp), low=ii.min, high=ii.max) for ii in qry])
 
 
-
-
+@app.route('/iotoggle/<item>')
+def iotoggle(item=None):
+    if item is None:
+        flash("item can't be None")
+        abort(404)
+    if item not in menu_states:
+        flash("unknown item '%s'" % item)
+        abort(404)
+    menu_states[item].state = not menu_states[item].state
+    session.query(IODevice).filter(IODevice.name == item).update({'state': menu_states[item].state})
+    print "setting", item, "to state", menu_states[item].state, "on port", menu_states[item].port
+    prev = request.args.get('prev')
+    return redirect(prev)
 
 
 app.secret_key = "\xcd\x1f\xc6O\x04\x18\x0eFN\xf9\x0c,\xfb4{''<\x9b\xfc\x08\x87\xe9\x13"
 
+@app.after_request
+def session_commit(response):
+    session.commit()
+    return response
+
+
+all_io_devices = session.query(IODevice)
+for res in all_io_devices:
+    if res.name in menu_states:
+        menu_states[res.name].state = res.state
+        menu_states[res.name].port = res.port
+
 if __name__ == '__main__':
-    @app.after_request
-    def session_commit(response):
-        session.commit()
-        return response
     app.run(debug=True, port=8080, host='0.0.0.0')
