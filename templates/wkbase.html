@@ -23,6 +23,7 @@
                   <ul class="dropdown-menu" role="menu">
                      {% for item, value in menu_states.items() %}
                      <li {% if value.state%}class="active"{% endif %}><a href="{{value.url}}?prev={{active_page}}">{{value.text}}</a></li>
+                     <li class="divider"></li>
                     {% endfor %}
                   </ul>
                   </li>
